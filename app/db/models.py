@@ -27,7 +27,7 @@ class User(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     login: str = Field(max_length=15, nullable=False, unique=True, index=True)
-    password: str = Field(nullable=False)
+    password: str = Field(nullable=False, max_length=60)
     full_name: str = Field(nullable=False, max_length=150)
     phone_number: str
     role: UserRole | None = Field(default=UserRole.customer, nullable=False)

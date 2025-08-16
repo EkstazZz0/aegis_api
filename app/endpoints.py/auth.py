@@ -5,6 +5,8 @@ from passlib.context import CryptContext
 from app.core.config import secret_key
 from app.db.models import User
 from app.db.session import SessionDep
+from app.schemas.users import UserPublic
+from app.schemas.auth import LoginForm, NewToken
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -14,8 +16,9 @@ router = APIRouter(
 )
 
 
-@router.post("/registration", status_code=status.HTTP_201_CREATED, response_model=User)
+@router.post("/registration", status_code=status.HTTP_201_CREATED, response_model=UserPublic)
 async def registration(session: SessionDep, user: User):
+    user.password = pwd_context.hash(user.password)
     session.add(user)
     try:
         await session.commit()
@@ -27,6 +30,6 @@ async def registration(session: SessionDep, user: User):
     return user
 
 
-@router.post("")
-async def authentication():
+@router.post("", status_code=status.HTTP_200_OK)
+async def authentication(form: LoginForm):
     pass
