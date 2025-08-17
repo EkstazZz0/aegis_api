@@ -2,9 +2,9 @@ from sqlmodel import SQLModel, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import engine
-from app.db.models import User, ResolverScope
+from app.db.models import User, ResolverScope, InactiveRefreshToken
 from app.core.config import pwd_context
-from app.core.exceptions import auth_ivalid_credentials_exception
+from app.core.exceptions import auth_ivalid_credentials
 
 
 async def init_db():
@@ -16,9 +16,13 @@ async def authenticate_user(session: AsyncSession, username: str, password: str)
     user = (await session.execute(select(User).where(User.username == username))).scalars().first()
     
     if not user or not pwd_context.verify(password, user.password):
-        raise auth_ivalid_credentials_exception
+        raise auth_ivalid_credentials
     
     return user
+
+
+async def get_inactive_refresh_token(session: AsyncSession, refresh_token: str) -> InactiveRefreshToken:
+    return (await session.execute(select(InactiveRefreshToken).where(InactiveRefreshToken.value == refresh_token))).scalars().first()
 
 
 async def get_user_scopes(session: AsyncSession, user_id: int):
