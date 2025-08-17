@@ -26,10 +26,10 @@ class User(SQLModel, table=True):
     __tablename__ = "users"
 
     id: int | None = Field(default=None, primary_key=True)
-    login: str = Field(max_length=15, nullable=False, unique=True, index=True)
+    username: str = Field(max_length=15, nullable=False, unique=True, index=True)
     password: str = Field(nullable=False, max_length=60)
     full_name: str = Field(nullable=False, max_length=150)
-    phone_number: str
+    phone_number: str = Field(unique=True)
     role: UserRole | None = Field(default=UserRole.customer, nullable=False)
     medical_organisation_id: int = Field(foreign_key="medical_organisations.id", ondelete="SET NULL")
 
@@ -77,8 +77,9 @@ class Comment(SQLModel, table=True):
     content: str = Field(max_length=500, nullable=False)
 
 
-class Scope(SQLModel, table=True):
-    __tablename__ = "scopes"
+class ResolverScope(SQLModel, table=True):
+    __tablename__ = "resolver_scopes"
 
-    user_id: int = Field(foreign_key="users.id", ondelete="RESTRICT")
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", ondelete="CASCADE")
     service_id: int = Field(foreign_key="services.id", ondelete="SET NULL")

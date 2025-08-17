@@ -1,11 +1,18 @@
 import os
 from typing import Any
+from passlib.context import CryptContext
+from datetime import timedelta
 
 from app.core.enums import AppEnv
 
 app_env = AppEnv(os.getenv("APP_ENV", "test")).value
 
 secret_key = os.environ["SECRET_KEY"]
+access_token_expire_time = timedelta(minutes=int(os.getenv("ACCESS_TOKEN_MINUTES", "30")))
+refresh_token_expire_time = timedelta(days=int(os.getenv("REFRESH_TOKEN_DAYS", "7")))
+jwt_algorithm = "HS256"
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_db_configuration() -> dict[str, Any]:
