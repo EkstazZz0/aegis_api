@@ -21,9 +21,9 @@ async def authenticate_user(session: AsyncSession, username: str, password: str)
     return user
 
 
-async def get_inactive_refresh_token(session: AsyncSession, refresh_token: str) -> InactiveRefreshToken:
-    return (await session.execute(select(InactiveRefreshToken).where(InactiveRefreshToken.value == refresh_token))).scalars().first()
+async def get_user_by_login(session: AsyncSession, username: str) -> User | None:
+    return (await session.execute(select(User).where(User.username == username))).scalars().first()
 
 
-async def get_user_scopes(session: AsyncSession, user_id: int):
+async def get_user_scopes(session: AsyncSession, user_id: int)-> list[int]:
     return (await session.execute(select(ResolverScope.service_id).where(ResolverScope.user_id == user_id))).scalars().all()

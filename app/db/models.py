@@ -83,11 +83,3 @@ class ResolverScope(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", ondelete="CASCADE")
     service_id: int = Field(foreign_key="services.id", ondelete="SET NULL")
-
-
-class InactiveRefreshToken(SQLModel, table=True):
-    __tablename__ = "inactive_refresh_tokens"
-
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    value: str = Field(nullable=False, unique=True)
-

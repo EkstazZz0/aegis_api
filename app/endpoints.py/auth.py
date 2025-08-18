@@ -10,7 +10,7 @@ from app.core.exceptions import user_already_exists, auth_expired_token, auth_to
 from app.core.utils import generate_new_token, generate_access_user_data, generate_refresh_user_data
 from app.db.models import User
 from app.db.session import SessionDep
-from app.db.repository import authenticate_user, get_user_scopes, get_inactive_refresh_token
+from app.db.repository import authenticate_user, get_user_scopes, get_user_by_login
 from app.schemas.users import UserPublic
 from app.schemas.auth import NewToken
 
@@ -46,8 +46,6 @@ async def authentication(session: SessionDep, form: Annotated[OAuth2PasswordRequ
 
 @router.post("/refresh", status_code=status.HTTP_200_OK, response_model=NewToken)
 async def refresh_token(session: SessionDep, refresh_token: str = Body()):
-    if await get_inactive_refresh_token(session=session, refresh_token=refresh_token):
-        raise 
     try:
         payload = jwt.decode(refresh_token, secret_key, jwt_algorithm)
     except ExpiredSignatureError:
@@ -55,5 +53,9 @@ async def refresh_token(session: SessionDep, refresh_token: str = Body()):
     except InvalidTokenError:
         raise auth_token_invalid
     
+    user = await get_user_by_login(session=session, username=payload["sub"])
     
-
+    return generate_new_token(
+        access_user_data=generate_access_user_data(user=user, scopes=(await get_user_scopes(session=session, user_id=user.id))),
+        refresh_user_data=generate_refresh_user_data(user=user)
+    )
