@@ -1,11 +1,23 @@
 import jwt
 from datetime import datetime
 import copy
+from fastapi import FastAPI
+import os
 
 from app.schemas.auth import NewToken
-from app.core.config import access_token_expire_time, refresh_token_expire_time, jwt_algorithm, secret_key
+from app.core.config import access_token_expire_time, refresh_token_expire_time, jwt_algorithm, secret_key, app_env
 from app.core.enums import UserRole
 from app.db.models import User
+from app.db.session import engine
+from app.db.repository import init_db
+
+
+async def app_lifespan(app: FastAPI):
+    await init_db()
+    yield
+    if app_env == "test":
+        await engine.dispose()
+        os.unlink("./test.db")
 
 
 def generate_new_token(access_user_data: dict, refresh_user_data: dict) -> NewToken:

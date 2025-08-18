@@ -31,7 +31,7 @@ class User(SQLModel, table=True):
     full_name: str = Field(nullable=False, max_length=150)
     phone_number: str = Field(unique=True)
     role: UserRole | None = Field(default=UserRole.customer, nullable=False)
-    medical_organisation_id: int = Field(foreign_key="medical_organisations.id", ondelete="SET NULL")
+    medical_organisation_id: int = Field(foreign_key="medical_organisations.id", ondelete="SET NULL", nullable=True)
 
 
     @field_validator('phone_number')
@@ -48,7 +48,7 @@ class Request(SQLModel, table=True):
     __tablename__ = "requests"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    service_id: int = Field(foreign_key="services.id", ondelete="SET NULL")
+    service_id: int = Field(foreign_key="services.id", ondelete="SET NULL", nullable=True)
     customer_id: int = Field(foreign_key="users.id", ondelete="RESTRICT")
     title: str = Field(max_length=300, nullable=False)
     vipnet_node: str = Field(max_length=250, nullable=False)
@@ -82,4 +82,4 @@ class ResolverScope(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", ondelete="CASCADE")
-    service_id: int = Field(foreign_key="services.id", ondelete="SET NULL")
+    service_id: int = Field(foreign_key="services.id", ondelete="CASCADE")

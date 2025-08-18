@@ -16,7 +16,7 @@ from app.schemas.auth import NewToken
 
 
 router = APIRouter(
-    prefix="auth"
+    prefix="/auth"
 )
 
 

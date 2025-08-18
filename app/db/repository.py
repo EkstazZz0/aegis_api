@@ -2,7 +2,7 @@ from sqlmodel import SQLModel, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import engine
-from app.db.models import User, ResolverScope, InactiveRefreshToken
+from app.db.models import User, ResolverScope
 from app.core.config import pwd_context
 from app.core.exceptions import auth_ivalid_credentials
 
