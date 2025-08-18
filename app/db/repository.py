@@ -9,7 +9,7 @@ from app.core.exceptions import auth_ivalid_credentials
 
 async def init_db():
     async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all())
+        await conn.run_sync(SQLModel.metadata.create_all)
 
 
 async def authenticate_user(session: AsyncSession, username: str, password: str) -> User:

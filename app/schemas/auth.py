@@ -10,3 +10,7 @@ class NewToken(SQLModel):
 class LoginForm(SQLModel):
     login: str = Field()
     password: str = Field()
+
+
+class RefreshToken(SQLModel):
+    refresh_token: str

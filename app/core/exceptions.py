@@ -24,3 +24,13 @@ auth_token_inactive = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Token inactive"
 )
+
+medical_organisation_not_found = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="Medical organisation not found"
+)
+
+user_not_found = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="User not found"
+)

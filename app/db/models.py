@@ -31,7 +31,7 @@ class User(SQLModel, table=True):
     full_name: str = Field(nullable=False, max_length=150)
     phone_number: str = Field(unique=True)
     role: UserRole | None = Field(default=UserRole.customer, nullable=False)
-    medical_organisation_id: int = Field(foreign_key="medical_organisations.id", ondelete="SET NULL", nullable=True)
+    # medical_organisation_id: int = Field(foreign_key="medical_organisations.id", ondelete="SET NULL", nullable=True)
 
 
     @field_validator('phone_number')

@@ -15,3 +15,5 @@ class UserRole(str, Enum):
 class RequestStatus(str, Enum):
     pending = "pending"
     in_progress = "in_progress"
+    waiting_for_response = "waiting_for_response"
+    done = "done"

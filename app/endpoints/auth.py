@@ -6,13 +6,13 @@ import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
 
 from app.core.config import secret_key, pwd_context, jwt_algorithm
-from app.core.exceptions import user_already_exists, auth_expired_token, auth_token_invalid
+from app.core.exceptions import user_already_exists, auth_expired_token, auth_token_invalid, medical_organisation_not_found, user_not_found
 from app.core.utils import generate_new_token, generate_access_user_data, generate_refresh_user_data
-from app.db.models import User
+from app.db.models import User, MedicalOrganisation
 from app.db.session import SessionDep
 from app.db.repository import authenticate_user, get_user_scopes, get_user_by_login
-from app.schemas.users import UserPublic
-from app.schemas.auth import NewToken
+from app.schemas.users import UserPublic, UserCreate
+from app.schemas.auth import NewToken, RefreshToken
 
 
 router = APIRouter(
@@ -21,8 +21,13 @@ router = APIRouter(
 
 
 @router.post("/registration", status_code=status.HTTP_201_CREATED, response_model=UserPublic)
-async def registration(session: SessionDep, user: User):
+async def registration(session: SessionDep, create_user_data: UserCreate):
+    # if not await session.get(MedicalOrganisation, create_user_data):
+    #     raise medical_organisation_not_found
+
+    user = User.model_validate(create_user_data)
     user.password = pwd_context.hash(user.password)
+    
     session.add(user)
     try:
         await session.commit()
@@ -45,15 +50,18 @@ async def authentication(session: SessionDep, form: Annotated[OAuth2PasswordRequ
 
 
 @router.post("/refresh", status_code=status.HTTP_200_OK, response_model=NewToken)
-async def refresh_token(session: SessionDep, refresh_token: str = Body()):
+async def refresh_token(session: SessionDep, token_data: RefreshToken):
     try:
-        payload = jwt.decode(refresh_token, secret_key, jwt_algorithm)
+        payload = jwt.decode(token_data.refresh_token, secret_key, jwt_algorithm)
     except ExpiredSignatureError:
         raise auth_expired_token
     except InvalidTokenError:
         raise auth_token_invalid
     
     user = await get_user_by_login(session=session, username=payload["sub"])
+
+    if not user:
+        raise user_not_found
     
     return generate_new_token(
         access_user_data=generate_access_user_data(user=user, scopes=(await get_user_scopes(session=session, user_id=user.id))),
