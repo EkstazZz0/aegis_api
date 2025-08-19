@@ -2,6 +2,7 @@ import os
 from typing import Any
 from passlib.context import CryptContext
 from datetime import timedelta
+from fastapi.security import OAuth2PasswordBearer
 
 from app.core.enums import AppEnv
 
@@ -13,6 +14,8 @@ refresh_token_expire_time = timedelta(days=int(os.getenv("REFRESH_TOKEN_DAYS", "
 jwt_algorithm = "HS256"
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth")
 
 
 def get_db_configuration() -> dict[str, Any]:
