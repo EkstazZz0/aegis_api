@@ -36,3 +36,18 @@ user_not_found = HTTPException(
 )
 
 invalid_phone_number = ValueError("Invalid phone number")
+
+service_not_found = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="Service not found"
+)
+
+request_not_found = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="Request not found"
+)
+
+request_not_available = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Request not available"
+)

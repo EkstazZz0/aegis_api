@@ -17,6 +17,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth")
 
+admin_password = os.environ["ADMIN_PASSWORD"]
+
 
 def get_db_configuration() -> dict[str, Any]:
     if app_env == "production":

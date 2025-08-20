@@ -1,5 +1,10 @@
-from app.db.models import MedicalOrganisation
+from sqlmodel import select
+
+from app.db.models import MedicalOrganisation, User
 from app.db.session import async_session
+from app.core.enums import UserRole
+from app.core.config import admin_password, pwd_context
+
 
 mo_list = [
     MedicalOrganisation(mo_code=202,mo_name=r'ГБУЗ СО "БЕЗЕНЧУКСКАЯ ЦРБ"'),
@@ -508,5 +513,18 @@ async def set_preset_data():
     async with async_session() as session:
         for medical_organisation in mo_list:
             session.add(medical_organisation)
+        
+        await session.commit()
+        
+        medical_organisation_id_miac = (await session.execute(select(MedicalOrganisation.id).where(MedicalOrganisation.mo_code==6005))).scalars().first()
+        
+        session.add(User(
+            username="admin",
+            password=pwd_context.hash(admin_password),
+            full_name="admin",
+            phone_number="+79999999999",
+            role=UserRole.admin,
+            medical_organisation_id=medical_organisation_id_miac
+            ))
     
         await session.commit()

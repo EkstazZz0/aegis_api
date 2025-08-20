@@ -16,7 +16,8 @@ from app.schemas.auth import NewToken, RefreshToken
 
 
 router = APIRouter(
-    prefix="/auth"
+    prefix="/auth",
+    tags=["auth"]
 )
 
 

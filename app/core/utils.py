@@ -13,7 +13,7 @@ from app.core.enums import UserRole
 from app.db.models import User
 from app.db.session import engine, SessionDep
 from app.db.repository import init_db, get_user_by_login
-from app.migrations.insert_preset_mo import set_preset_data
+from app.migrations.insert_preset_data import set_preset_data
 
 
 async def app_lifespan(app: FastAPI):

@@ -10,7 +10,8 @@ from app.schemas.users import UserPublic, UserUpdate
 
 
 router = APIRouter(
-    prefix="/users"
+    prefix="/users",
+    tags=["users"]
 )
 
 
