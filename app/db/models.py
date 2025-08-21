@@ -48,10 +48,10 @@ class User(SQLModel, table=True):
 class Request(SQLModel, table=True):
     __tablename__ = "requests"
 
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     service_id: int = Field(foreign_key="services.id", ondelete="SET NULL", nullable=True)
     customer_id: int = Field(foreign_key="users.id", ondelete="RESTRICT")
-    title: str = Field(max_length=300, nullable=False)
+    title: str = Field(max_length=60, nullable=False)
     vipnet_node: str = Field(max_length=250, nullable=False)
     description: str = Field(max_length=3000)
     status: RequestStatus | None = Field(default=RequestStatus.pending, nullable=False)
@@ -74,7 +74,8 @@ class Comment(SQLModel, table=True):
     __tablename__ = "comments"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    request_id: UUID = Field(foreign_key="requests.id", ondelete="RESTRICT", nullable=False)
+    request_id: int = Field(foreign_key="requests.id", ondelete="RESTRICT", nullable=False)
+    author_id: int = Field(foreign_key="users.id", ondelete="RESTRICT", nullable=False)
     content: str = Field(max_length=500, nullable=False)
 
 

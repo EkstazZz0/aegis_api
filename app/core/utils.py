@@ -39,26 +39,27 @@ def generate_new_token(access_user_data: dict, refresh_user_data: dict) -> NewTo
 
 
 def generate_access_user_data(user: User, scopes: list[int]):
+    user_data = {
+        "sub": user.username,
+        "user_id": user.id,
+        "role": user.role
+        }
+    
     if user.role == UserRole.resolver:
-        return {
-            "sub": user.username,
-            "role": user.role,
-            "scopes": scopes
-        }
+        user_data.update({"scopes": scopes})
+        return user_data
     else:
-        return {
-            "sub": user.username,
-            "role": user.role
-        }
+        return user_data
 
 
 def generate_refresh_user_data(user: User):
     return {
-        "sub": user.username
+        "sub": user.username,
+        "user_id": user.id
     }
 
 
-def get_payload(token: str) -> dict[str, Any]:
+def get_payload(token: Annotated[str, Depends(oauth2_scheme)]) -> dict[str, Any]:
     try:
         return jwt.decode(token, secret_key, jwt_algorithm)
     except ExpiredSignatureError:
@@ -67,7 +68,6 @@ def get_payload(token: str) -> dict[str, Any]:
         raise auth_token_invalid
 
 
-async def get_user(session: SessionDep, access_token: Annotated[str, Depends(oauth2_scheme)]):
-    payload = get_payload(access_token)
+async def get_user(session: SessionDep, payload: Annotated[dict[str, Any], Depends(get_payload)]):
     user = await get_user_by_login(session=session, username=payload["sub"])
     return user

@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends
-from typing import Annotated
+from fastapi import APIRouter, Depends, Query
+from typing import Annotated, Any
 from uuid import UUID
+from sqlmodel import select
 
-from app.schemas.requests import RequestCreate
+from app.schemas.requests import RequestCreate, GetRequests
 from app.db.session import SessionDep
 from app.db.models import User, Service, Request
+from app.db.repository import get_user_scopes
 from app.core.utils import get_user, get_payload
 from app.core.exceptions import service_not_found, request_not_available, request_not_found
 from app.core.config import oauth2_scheme
@@ -34,13 +36,11 @@ async def create_request(session: SessionDep,
 
 
 @router.get("/{request_id}")
-async def get_request(user: Annotated[User, Depends(get_user)], session: SessionDep, request_id: UUID, token: str = Depends(oauth2_scheme)):
+async def get_request(user: Annotated[User, Depends(get_user)], session: SessionDep, request_id: UUID, payload: Annotated[dict[str, Any], Depends(get_payload)]):
     request = await session.get(Request, request_id)
 
     if not request:
         raise request_not_found
-
-    payload = get_payload(token=token)
 
     if payload["role"] == UserRole.customer and request.customer_id != user.id:
         raise request_not_available
@@ -50,4 +50,19 @@ async def get_request(user: Annotated[User, Depends(get_user)], session: Session
     return request
 
 
+@router.get("", response_model=list[Request])
+async def get_requests(session: SessionDep, get_data: Annotated[GetRequests, Query()], payload: Annotated[dict[str, Any], Depends(get_payload)]):
+    statement = select(Request).limit(limit=get_data.limit).offset(offset=get_data.offset)
 
+    if payload["role"] == UserRole.customer:
+        statement = statement.where(Request.customer_id == payload["user_id"])
+    elif payload["role"] == UserRole.resolver:
+        statement = statement.where(Request.service_id.in_(list(set(payload["scopes"]) & set(get_data.services_id))))
+    else:
+        if get_data.services_id:
+            statement = statement.where(Request.service_id.in_(get_data.services_id))
+
+    if get_data.statuses:
+        statement = statement.where(Request.status.in_(get_data.statuses))
+    
+    return (await session.execute(statement)).scalars().all()
