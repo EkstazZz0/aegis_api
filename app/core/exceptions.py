@@ -47,7 +47,17 @@ request_not_found = HTTPException(
     detail="Request not found"
 )
 
-request_not_available = HTTPException(
+request_forbidden = HTTPException(
     status_code=status.HTTP_403_FORBIDDEN,
     detail="Request not available"
+)
+
+comments_forbidden = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Comments not available"
+)
+
+comment_not_found = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="Comment not found"
 )

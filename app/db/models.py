@@ -12,8 +12,8 @@ class MedicalOrganisation(SQLModel, table=True):
     __tablename__ = "medical_organisations"
 
     id: int | None = Field(default=None, primary_key=True)
-    mo_code: int = Field(nullable=False, unique=True)
-    mo_name: str = Field(nullable=False, unique=True)
+    mo_code: int = Field(nullable=False, unique=True, lt=100000000)
+    mo_name: str = Field(nullable=False, unique=True, max_length=200)
 
 
 class Service(SQLModel, table=True):

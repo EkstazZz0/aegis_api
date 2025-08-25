@@ -8,9 +8,9 @@ from typing import Annotated, Any
 
 from app.schemas.auth import NewToken
 from app.core.config import access_token_expire_time, refresh_token_expire_time, jwt_algorithm, secret_key, app_env, oauth2_scheme
-from app.core.exceptions import auth_expired_token, auth_token_invalid
+from app.core.exceptions import auth_expired_token, auth_token_invalid, request_forbidden
 from app.core.enums import UserRole
-from app.db.models import User
+from app.db.models import User, Request
 from app.db.session import engine, SessionDep
 from app.db.repository import init_db, get_user_by_login
 from app.migrations.insert_preset_data import set_preset_data
@@ -69,5 +69,9 @@ def get_payload(token: Annotated[str, Depends(oauth2_scheme)]) -> dict[str, Any]
 
 
 async def get_user(session: SessionDep, payload: Annotated[dict[str, Any], Depends(get_payload)]):
-    user = await get_user_by_login(session=session, username=payload["sub"])
-    return user
+    return await get_user_by_login(session=session, username=payload["sub"])
+
+
+def check_request_available(payload: Annotated[dict[str, Any], Depends(get_payload)], request: Request):
+    if (payload["role"] == UserRole.customer and request.customer_id != payload["user_id"]) or (payload["role"] == UserRole.resolver and not(request.service_id in payload["scopes"])):
+        raise request_forbidden

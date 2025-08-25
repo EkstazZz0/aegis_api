@@ -5,11 +5,9 @@ from sqlmodel import select
 
 from app.schemas.requests import RequestCreate, GetRequests
 from app.db.session import SessionDep
-from app.db.models import User, Service, Request
-from app.db.repository import get_user_scopes
-from app.core.utils import get_user, get_payload
-from app.core.exceptions import service_not_found, request_not_available, request_not_found
-from app.core.config import oauth2_scheme
+from app.db.models import Service, Request
+from app.core.utils import get_payload, check_request_available
+from app.core.exceptions import service_not_found, request_not_found
 from app.core.enums import UserRole
 
 router = APIRouter(
@@ -21,31 +19,28 @@ router = APIRouter(
 @router.post("", response_model=Request)
 async def create_request(session: SessionDep,
                          request_data: RequestCreate,
-                         user: Annotated[User, Depends(get_user)]):
+                         payload: Annotated[dict[str, Any], Depends(get_payload)]):
     
     if not await session.get(Service, request_data.service_id):
         raise service_not_found
     
-    request = Request(**request_data.model_dump_json(), id=user.id)
+    request = Request(**request_data.model_dump_json(), id=payload["user_id"])
 
     session.add(request)
     await session.commit()
-    session.refresh(request)
+    await session.refresh(request)
 
     return request
 
 
 @router.get("/{request_id}")
-async def get_request(user: Annotated[User, Depends(get_user)], session: SessionDep, request_id: UUID, payload: Annotated[dict[str, Any], Depends(get_payload)]):
+async def get_request(session: SessionDep, request_id: UUID, payload: Annotated[dict[str, Any], Depends(get_payload)]):
     request = await session.get(Request, request_id)
 
     if not request:
         raise request_not_found
 
-    if payload["role"] == UserRole.customer and request.customer_id != user.id:
-        raise request_not_available
-    elif payload["role"] == UserRole.resolver and not(request.service_id in payload["scopes"]):
-        raise request_not_available
+    check_request_available(payload=payload, request=request)
     
     return request
 

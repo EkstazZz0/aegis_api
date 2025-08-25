@@ -2,9 +2,10 @@ from sqlmodel import SQLModel, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import engine
-from app.db.models import User, ResolverScope
+from app.db.models import User, ResolverScope, Comment
 from app.core.config import pwd_context
 from app.core.exceptions import auth_ivalid_credentials
+from app.schemas.comments import GetComments
 
 
 async def init_db():
@@ -27,3 +28,10 @@ async def get_user_by_login(session: AsyncSession, username: str) -> User | None
 
 async def get_user_scopes(session: AsyncSession, user_id: int)-> list[int]:
     return (await session.execute(select(ResolverScope.service_id).where(ResolverScope.user_id == user_id))).scalars().all()
+
+
+async def get_comments(session: AsyncSession, filter_data: GetComments) -> list[Comment]:
+    return (await session.execute(select(Comment)
+                                 .where(Comment.request_id==filter_data.request_id)
+                                 .limit(limit=filter_data.limit)
+                                 .offset(offset=filter_data.offset))).scalars().all()
