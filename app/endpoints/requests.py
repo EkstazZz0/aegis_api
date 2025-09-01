@@ -7,8 +7,8 @@ from app.schemas.requests import RequestCreate, GetRequests
 from app.db.session import SessionDep
 from app.db.models import Service, Request
 from app.core.utils import get_payload, check_request_available
-from app.core.exceptions import service_not_found, request_not_found
-from app.core.enums import UserRole
+from app.core.exceptions import service_not_found, request_not_found, request_forbidden
+from app.core.enums import UserRole, RequestStatus
 
 router = APIRouter(
     prefix="/requests",
@@ -46,7 +46,9 @@ async def get_request(session: SessionDep, request_id: UUID, payload: Annotated[
 
 
 @router.get("", response_model=list[Request])
-async def get_requests(session: SessionDep, get_data: Annotated[GetRequests, Query()], payload: Annotated[dict[str, Any], Depends(get_payload)]):
+async def get_requests(session: SessionDep,
+                       get_data: Annotated[GetRequests, Query()],
+                       payload: Annotated[dict[str, Any], Depends(get_payload)]):
     statement = select(Request).limit(limit=get_data.limit).offset(offset=get_data.offset)
 
     if payload["role"] == UserRole.customer:
@@ -61,3 +63,32 @@ async def get_requests(session: SessionDep, get_data: Annotated[GetRequests, Que
         statement = statement.where(Request.status.in_(get_data.statuses))
     
     return (await session.execute(statement)).scalars().all()
+
+
+@router.put("/status/{request_id}", response_model=Request)
+async def change_request_status(session: SessionDep,
+                                request_id: int,
+                                request_status: Annotated[RequestStatus, Query()],
+                                payload: Annotated[dict[str, Any], Depends(get_payload)]):
+    request = await session.get(Request, request_id)
+
+    if not request:
+        raise request_not_found
+    
+    if (
+        payload["role"] == UserRole.customer and 
+        request_status != RequestStatus.done and 
+        payload["user_id"] != request.customer_id
+        ) or (
+            payload["role"] == UserRole.resolver and 
+            not (request.service_id in payload["scopes"])
+            ):
+        raise request_forbidden
+    
+    request.status = request_status
+
+    session.add(request)
+    await session.commit()
+    await session.refresh(request)
+    
+    return request

@@ -54,3 +54,5 @@ async def delete_comment(comment_id: int, session: SessionDep):
         raise comment_not_found
     
     await session.delete(comment)
+
+    return {"success": True}
