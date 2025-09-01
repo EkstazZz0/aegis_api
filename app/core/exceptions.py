@@ -52,9 +52,9 @@ request_forbidden = HTTPException(
     detail="Request not available"
 )
 
-comments_forbidden = HTTPException(
+comment_forbidden = HTTPException(
     status_code=status.HTTP_403_FORBIDDEN,
-    detail="Comments not available"
+    detail="Comment not available"
 )
 
 comment_not_found = HTTPException(
