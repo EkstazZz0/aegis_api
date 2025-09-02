@@ -71,3 +71,8 @@ forbidden = HTTPException(
     status_code=status.HTTP_403_FORBIDDEN,
     detail="Forbidden"
 )
+
+session_not_found = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Session not found"
+)

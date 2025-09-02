@@ -7,6 +7,7 @@ import re
 from app.core.config import refresh_token_expire_time
 from app.core.enums import UserRole, RequestStatus
 from app.core.exceptions import invalid_phone_number
+from app.core.utils import default_expired_at
 
 
 class MedicalOrganisation(SQLModel, table=True):
@@ -94,21 +95,21 @@ class UserSession(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", ondelete="CASCADE")
     refresh_token: str = Field(unique=True)
-    device_id: str = Field(max_length=128, unique=True)
-    fingerprint: str = Field(max_length=256, unique=True)
+    device_id: str = Field(max_length=128)
+    fingerprint: str = Field(max_length=256)
     user_agent: str | None = Field(default=None, nullable=True)
-    last_login: datetime = Field(default_factory=datetime.now)
-    expired_at: datetime
+    last_login: datetime | None = Field(default_factory=datetime.now)
+    expired_at: datetime | None = Field(default_factory=default_expired_at)
 
     def __setattr__(self, name, value):
         if name != 'last_login' and hasattr(self, name):
             super().__setattr__('last_login', datetime.now())
-            super().__setattr__('expired_at', datetime.now() + refresh_token_expire_time)
+            super().__setattr__('expired_at', default_expired_at())
         
         return super().__setattr__(name, value)
     
     
     def sqlmodel_update(self, obj, *, update = None):
         self.last_login = datetime.now()
-        self.expired_at = datetime.now() + refresh_token_expire_time
+        self.expired_at = default_expired_at()
         return super().sqlmodel_update(obj, update=update)

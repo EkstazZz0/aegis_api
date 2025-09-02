@@ -75,3 +75,7 @@ async def get_user(session: SessionDep, payload: Annotated[dict[str, Any], Depen
 def check_request_available(payload: Annotated[dict[str, Any], Depends(get_payload)], request: Request):
     if (payload["role"] == UserRole.customer and request.customer_id != payload["user_id"]) or (payload["role"] == UserRole.resolver and not(request.service_id in payload["scopes"])):
         raise request_forbidden
+    
+    
+def default_expired_at():
+    return datetime.now() + refresh_token_expire_time
