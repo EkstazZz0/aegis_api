@@ -1,9 +1,7 @@
-from fastapi import APIRouter, status, HTTPException, Depends, Body
+from fastapi import APIRouter, status, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from typing import Annotated
-import jwt
-from jwt import ExpiredSignatureError, InvalidTokenError
 
 from app.core.config import secret_key, pwd_context, jwt_algorithm
 from app.core.exceptions import user_already_exists, auth_expired_token, auth_token_invalid, medical_organisation_not_found, user_not_found

@@ -30,6 +30,11 @@ medical_organisation_not_found = HTTPException(
     detail="Medical organisation not found"
 )
 
+medical_organisation_exists = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="A medical organisation with the provided data already exists"
+)
+
 user_not_found = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="User not found"
@@ -60,4 +65,9 @@ comment_forbidden = HTTPException(
 comment_not_found = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="Comment not found"
+)
+
+forbidden = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Forbidden"
 )
