@@ -1,9 +1,10 @@
 from sqlmodel import SQLModel, Field
-from pydantic import field_validator
+from pydantic import field_validator, IPvAnyAddress
 from uuid import UUID, uuid4
 from datetime import datetime
 import re
 
+from app.core.config import refresh_token_expire_time
 from app.core.enums import UserRole, RequestStatus
 from app.core.exceptions import invalid_phone_number
 
@@ -85,3 +86,29 @@ class ResolverScope(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", ondelete="CASCADE")
     service_id: int = Field(foreign_key="services.id", ondelete="CASCADE")
+
+
+class UserSession(SQLModel, table=True):
+    __tablename__ = "user_sessions"
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", ondelete="CASCADE")
+    refresh_token: str = Field(unique=True)
+    device_id: str = Field(max_length=128, unique=True)
+    fingerprint: str = Field(max_length=256, unique=True)
+    user_agent: str | None = Field(default=None, nullable=True)
+    last_login: datetime = Field(default_factory=datetime.now)
+    expired_at: datetime
+
+    def __setattr__(self, name, value):
+        if name != 'last_login' and hasattr(self, name):
+            super().__setattr__('last_login', datetime.now())
+            super().__setattr__('expired_at', datetime.now() + refresh_token_expire_time)
+        
+        return super().__setattr__(name, value)
+    
+    
+    def sqlmodel_update(self, obj, *, update = None):
+        self.last_login = datetime.now()
+        self.expired_at = datetime.now() + refresh_token_expire_time
+        return super().sqlmodel_update(obj, update=update)

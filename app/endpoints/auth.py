@@ -52,7 +52,10 @@ async def authentication(session: SessionDep, form: Annotated[OAuth2PasswordRequ
 
 @router.post("/refresh", status_code=status.HTTP_200_OK, response_model=NewToken)
 async def refresh_token(session: SessionDep, token_data: RefreshToken):
-    payload = get_payload(token_data.refresh_token)
+    try:
+        payload = get_payload(token_data.refresh_token)
+    except auth_expired_token:
+        pass
     
     user = await get_user_by_login(session=session, username=payload["sub"])
 
