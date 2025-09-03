@@ -5,11 +5,11 @@ from typing import Annotated
 from sqlmodel import SQLModel, Field, select
 
 from app.core.config import secret_key, pwd_context, jwt_algorithm
-from app.core.exceptions import user_already_exists, auth_expired_token, auth_token_invalid, medical_organisation_not_found, user_not_found, session_not_found
-from app.core.utils import generate_new_token, generate_access_user_data, generate_refresh_user_data, get_payload
+from app.core.exceptions import user_already_exists, auth_expired_token, medical_organisation_not_found, user_not_found, auth_token_invalid
+from app.core.utils import generate_new_token, generate_access_user_data, generate_refresh_user_data, get_payload, generate_resolver_scopes
 from app.db.models import User, MedicalOrganisation, UserSession
 from app.db.session import SessionDep
-from app.db.repository import authenticate_user, get_user_scopes, get_user_by_login
+from app.db.repository import authenticate_user, get_resolver_services_ids, get_user_by_login
 from app.schemas.users import UserCreate
 from app.schemas.auth import NewToken, RefreshToken
 
@@ -21,8 +21,8 @@ router = APIRouter(
 
 class DeviceHeader(SQLModel):
     device_id: str = Field(max_length=128)
-    fingerprint: str = Field(max_length=256)
-    user_agent: str | None = Field(default=None, max_length=512)
+    fingerprint: str | None = Field(default=None, max_length=256)
+    user_agent: str = Field(max_length=512)
 
 
 @router.post("/registration", status_code=status.HTTP_201_CREATED)
@@ -52,20 +52,31 @@ async def authentication(session: SessionDep,
                          device_data: Annotated[DeviceHeader, Header()]):
     user = await authenticate_user(session=session, username=form.username, password=form.password)
 
-    user_session = (await session.execute(select(UserSession)
-                                         .where(UserSession.device_id == device_data.device_id)
-                                         .where(UserSession.fingerprint == device_data.fingerprint)
-                                         .where(UserSession.user_agent == device_data.user_agent))).scalars().first()
+    user_session = (
+        await session.execute(
+            select(UserSession)
+            .where(UserSession.device_id == device_data.device_id)
+        )
+    ).scalars().first()
     
     token = generate_new_token(
-        access_user_data=generate_access_user_data(user=user, scopes=(await get_user_scopes(session=session, user_id=user.id))),
+        access_user_data=generate_access_user_data(
+            user=user,
+            scopes=generate_resolver_scopes(
+                services_id=await get_resolver_services_ids(
+                    session=session,
+                    user_id=user.id
+                )
+            )
+        ),
         refresh_user_data=generate_refresh_user_data(user=user)
-        )
+    )
     
     if user_session:
         user_session.refresh_token = token.refresh_token
+        if 
     else:
-        user_session = UserSession(**device_data.model_dump_json(), refresh_token=token.refresh_token, user_id=user.id)
+        user_session = UserSession(**device_data.model_dump(), refresh_token=token.refresh_token, user_id=user.id)
     
     session.add(user_session)
     await session.commit()
@@ -92,12 +103,10 @@ async def refresh_token(session: SessionDep, token_data: RefreshToken):
         
         raise e
     
-    user = await get_user_by_login(session=session, username=payload["sub"])
+    user = await session.get(User, int(payload["sub"]))
 
     if not user:
-        user_not_found_401 = user_not_found
-        user_not_found_401.status_code = status.HTTP_401_UNAUTHORIZED
-        raise user_not_found_401
+        raise auth_token_invalid
     
     user_session = (
         await session.execute(
@@ -108,10 +117,18 @@ async def refresh_token(session: SessionDep, token_data: RefreshToken):
     ).scalars().first()
 
     if not user_session:
-        raise session_not_found
+        raise auth_token_invalid
     
     token = generate_new_token(
-        access_user_data=generate_access_user_data(user=user, scopes=(await get_user_scopes(session=session, user_id=user.id))),
+        access_user_data=generate_access_user_data(
+            user=user,
+            scopes=generate_resolver_scopes(
+                services_id=await get_resolver_services_ids(
+                    session=session,
+                    user_id=user.id
+                )
+            )
+        ),
         refresh_user_data=generate_refresh_user_data(user=user)
     )
     

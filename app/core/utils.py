@@ -10,7 +10,7 @@ from app.schemas.auth import NewToken
 from app.core.config import access_token_expire_time, refresh_token_expire_time, jwt_algorithm, secret_key, app_env, oauth2_scheme
 from app.core.exceptions import auth_expired_token, auth_token_invalid, request_forbidden
 from app.core.enums import UserRole
-from app.db.models import User, Request
+from app.db.models import User, Request, Comment
 from app.db.session import engine, SessionDep
 from app.db.repository import init_db, get_user_by_login
 from app.migrations.insert_preset_data import set_preset_data
@@ -40,13 +40,15 @@ def generate_new_token(access_user_data: dict, refresh_user_data: dict) -> NewTo
 
 def generate_access_user_data(user: User, scopes: list[int]):
     user_data = {
-        "sub": user.username,
-        "user_id": user.id,
+        "sub": str(user.id),
         "role": user.role
         }
     
     if user.role == UserRole.resolver:
         user_data.update({"scopes": scopes})
+        return user_data
+    elif user.role == UserRole.admin:
+        user_data.update({"scopes": ["*"]})
         return user_data
     else:
         return user_data
@@ -54,9 +56,12 @@ def generate_access_user_data(user: User, scopes: list[int]):
 
 def generate_refresh_user_data(user: User):
     return {
-        "sub": user.username,
-        "user_id": user.id
+        "sub": str(user.id),
     }
+
+
+def generate_resolver_scopes(services_id: list[int]):
+    return [f"service:{service_id}" for service_id in services_id]
 
 
 def get_payload(token: Annotated[str, Depends(oauth2_scheme)]) -> dict[str, Any]:
@@ -72,10 +77,21 @@ async def get_user(session: SessionDep, payload: Annotated[dict[str, Any], Depen
     return await get_user_by_login(session=session, username=payload["sub"])
 
 
-def check_request_available(payload: Annotated[dict[str, Any], Depends(get_payload)], request: Request):
-    if (payload["role"] == UserRole.customer and request.customer_id != payload["user_id"]) or (payload["role"] == UserRole.resolver and not(request.service_id in payload["scopes"])):
-        raise request_forbidden
+def check_request_available(
+        payload: Annotated[dict[str, Any], Depends(get_payload)],
+        request: Request
+) -> bool:
+    if set(["*", f"service:{request.service_id}"]) & set(payload["scopes"]) or request.customer_id == int(payload["sub"]):
+        return True
     
+    return False
+
+
+def check_comment_available(
+        payload: Annotated[dict[str, Any], Depends(get_payload)],
+        comment: Comment
+) -> bool:
+    if payload["role"] != UserRole.admin and int(payload["sub"]) != comment.author_id:
+        return False
     
-def default_expired_at():
-    return datetime.now() + refresh_token_expire_time
+    return True

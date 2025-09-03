@@ -24,7 +24,7 @@ async def create_request(session: SessionDep,
     if not await session.get(Service, request_data.service_id):
         raise service_not_found
     
-    request = Request(**request_data.model_dump_json(), id=payload["user_id"])
+    request = Request(**request_data.model_dump(), customer_id=payload["sub"])
 
     session.add(request)
     await session.commit()
@@ -40,7 +40,8 @@ async def get_request(session: SessionDep, request_id: UUID, payload: Annotated[
     if not request:
         raise request_not_found
 
-    check_request_available(payload=payload, request=request)
+    if not check_request_available(payload=payload, request=request):
+        raise request_forbidden
     
     return request
 

@@ -26,7 +26,7 @@ async def get_user_by_login(session: AsyncSession, username: str) -> User | None
     return (await session.execute(select(User).where(User.username == username))).scalars().first()
 
 
-async def get_user_scopes(session: AsyncSession, user_id: int)-> list[int]:
+async def get_resolver_services_ids(session: AsyncSession, user_id: int)-> list[int]:
     return (await session.execute(select(ResolverScope.service_id).where(ResolverScope.user_id == user_id))).scalars().all()
 
 

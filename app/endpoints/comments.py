@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Query, Depends, Body
 from typing import Annotated, Any
 
-from app.core.exceptions import request_not_found, comment_not_found, comment_forbidden
-from app.core.utils import get_payload, check_request_available
+from app.core.exceptions import request_not_found, comment_not_found, comment_forbidden, request_forbidden
+from app.core.utils import get_payload, check_request_available, check_comment_available
 from app.core.enums import UserRole
 from app.schemas.comments import GetComments, CommentPublic, CommentCreate
 from app.db.session import SessionDep
@@ -25,7 +25,8 @@ async def write_comment(session: SessionDep,
     if not request:
         raise request_not_found
     
-    check_request_available(payload=payload, request=request)
+    if not check_request_available(payload=payload, request=request):
+        raise request_forbidden
 
     comment = Comment.model_validate(**comment_data.model_dump_json())
 
@@ -46,7 +47,10 @@ async def edit_comment(session: SessionDep,
     if not comment:
         raise comment_not_found
     
-    if payload["role"] != UserRole.admin and payload["user_id"] != comment.author_id:
+    if not check_comment_available(
+        payload=payload,
+        comment=comment
+    ):
         raise comment_forbidden
     
     comment.content = content
@@ -63,7 +67,8 @@ async def get_comments(session: SessionDep,
     if not request:
         raise request_not_found
 
-    check_request_available(payload=payload, request=request)
+    if not check_request_available(payload=payload, request=request):
+        raise request_forbidden
          
     return await db_get_comments(session=session, filter_data=filter_data)
 
@@ -77,7 +82,10 @@ async def delete_comment(session: SessionDep,
     if not comment:
         raise comment_not_found
     
-    if payload["role"] != UserRole.admin and payload["user_id"] != comment.author_id:
+    if not check_comment_available(
+        payload=payload,
+        comment=comment
+    ):
         raise comment_forbidden
     
     await session.delete(comment)

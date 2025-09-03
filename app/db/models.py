@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field
-from pydantic import field_validator, IPvAnyAddress
+from pydantic import field_validator
 from uuid import UUID, uuid4
 from datetime import datetime
 import re
@@ -7,7 +7,10 @@ import re
 from app.core.config import refresh_token_expire_time
 from app.core.enums import UserRole, RequestStatus
 from app.core.exceptions import invalid_phone_number
-from app.core.utils import default_expired_at
+
+
+def default_expired_at():
+    return datetime.now() + refresh_token_expire_time
 
 
 class MedicalOrganisation(SQLModel, table=True):
@@ -96,8 +99,8 @@ class UserSession(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id", ondelete="CASCADE")
     refresh_token: str = Field(unique=True)
     device_id: str = Field(max_length=128)
-    fingerprint: str = Field(max_length=256)
-    user_agent: str | None = Field(default=None, nullable=True)
+    fingerprint: str | None = Field(default=None, max_length=256)
+    user_agent: str = Field()
     last_login: datetime | None = Field(default_factory=datetime.now)
     expired_at: datetime | None = Field(default_factory=default_expired_at)
 
