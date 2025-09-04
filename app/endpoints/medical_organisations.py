@@ -22,7 +22,7 @@ async def get_medical_organisation(session: SessionDep, mo_id: int):
     return await session.get(MedicalOrganisation, mo_id)
 
 
-@router.get("")
+@router.get("", response_model=list[MedicalOrganisation])
 async def get_medical_organisations(session: SessionDep,
                                     search_data: Annotated[GetMedicalOrganisations, Query()]):
     statement = select(MedicalOrganisation)

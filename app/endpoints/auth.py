@@ -3,15 +3,19 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from typing import Annotated
 from sqlmodel import SQLModel, Field, select
+import logging
 
 from app.core.config import secret_key, pwd_context, jwt_algorithm
 from app.core.exceptions import user_already_exists, auth_expired_token, medical_organisation_not_found, user_not_found, auth_token_invalid
 from app.core.utils import generate_new_token, generate_access_user_data, generate_refresh_user_data, get_payload, generate_resolver_scopes
 from app.db.models import User, MedicalOrganisation, UserSession
 from app.db.session import SessionDep
-from app.db.repository import authenticate_user, get_resolver_services_ids, get_user_by_login
+from app.db.repository import authenticate_user, get_resolver_services_ids
 from app.schemas.users import UserCreate
 from app.schemas.auth import NewToken, RefreshToken
+
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(
@@ -74,7 +78,13 @@ async def authentication(session: SessionDep,
     
     if user_session:
         user_session.refresh_token = token.refresh_token
-        if 
+
+        if user_session.fingerprint != device_data.fingerprint:
+            logger.info(f"Fingerprint changed for {user_session.user_id} from {user_session.fingerprint} to {device_data.fingerprint}")
+            user_session.fingerprint = device_data.fingerprint
+        if user_session.user_agent != device_data.user_agent:
+            logger.info(f"User-Agent changed for {user_session.user_id} from {user_session.user_agent} to {user_session.user_agent}")
+            user_session.user_agent = device_data.user_agent
     else:
         user_session = UserSession(**device_data.model_dump(), refresh_token=token.refresh_token, user_id=user.id)
     
@@ -86,7 +96,11 @@ async def authentication(session: SessionDep,
 
 
 @router.post("/refresh", status_code=status.HTTP_200_OK, response_model=NewToken)
-async def refresh_token(session: SessionDep, token_data: RefreshToken):
+async def refresh_token(
+    session: SessionDep,
+    token_data: RefreshToken,
+    device_data: Annotated[DeviceHeader, Header()]
+):
     try:
         payload = get_payload(token_data.refresh_token)
     except HTTPException as e:
@@ -113,11 +127,19 @@ async def refresh_token(session: SessionDep, token_data: RefreshToken):
             select(UserSession)
             .where(UserSession.refresh_token == token_data.refresh_token)
             .where(UserSession.user_id == user.id)
+            .where(UserSession.device_id == device_data.device_id)
         )
     ).scalars().first()
 
     if not user_session:
         raise auth_token_invalid
+    
+    if user_session.fingerprint != device_data.fingerprint:
+        logger.info(f"Fingerprint changed for {user_session.user_id} from {user_session.fingerprint} to {device_data.fingerprint}")
+        user_session.fingerprint = device_data.fingerprint
+    if user_session.user_agent != device_data.user_agent:
+        logger.info(f"User-Agent changed for {user_session.user_id} from {user_session.user_agent} to {user_session.user_agent}")
+        user_session.user_agent = device_data.user_agent
     
     token = generate_new_token(
         access_user_data=generate_access_user_data(

@@ -3,8 +3,14 @@ from typing import Any
 from passlib.context import CryptContext
 from datetime import timedelta
 from fastapi.security import OAuth2PasswordBearer
+import logging
 
 from app.core.enums import AppEnv
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 app_env = AppEnv(os.getenv("APP_ENV", "test")).value
 

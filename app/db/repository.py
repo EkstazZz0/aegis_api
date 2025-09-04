@@ -14,7 +14,7 @@ async def init_db():
 
 
 async def authenticate_user(session: AsyncSession, username: str, password: str) -> User:
-    user = (await session.execute(select(User).where(User.username == username))).scalars().first()
+    user = await get_user_by_login(session=session, username=username)
     
     if not user or not pwd_context.verify(password, user.password):
         raise auth_ivalid_credentials

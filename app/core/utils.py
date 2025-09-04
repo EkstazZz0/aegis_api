@@ -12,7 +12,7 @@ from app.core.exceptions import auth_expired_token, auth_token_invalid, request_
 from app.core.enums import UserRole
 from app.db.models import User, Request, Comment
 from app.db.session import engine, SessionDep
-from app.db.repository import init_db, get_user_by_login
+from app.db.repository import init_db
 from app.migrations.insert_preset_data import set_preset_data
 
 
@@ -74,7 +74,7 @@ def get_payload(token: Annotated[str, Depends(oauth2_scheme)]) -> dict[str, Any]
 
 
 async def get_user(session: SessionDep, payload: Annotated[dict[str, Any], Depends(get_payload)]):
-    return await get_user_by_login(session=session, username=payload["sub"])
+    return await session.get(User, int(payload["sub"]))
 
 
 def check_request_available(
