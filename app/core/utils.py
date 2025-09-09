@@ -1,19 +1,31 @@
-import jwt
-from jwt.exceptions import ExpiredSignatureError,InvalidTokenError
-from datetime import datetime
 import copy
-from fastapi import FastAPI, Depends
 import os
+from datetime import datetime
 from typing import Annotated, Any
 
-from app.schemas.auth import NewToken
-from app.core.config import access_token_expire_time, refresh_token_expire_time, jwt_algorithm, secret_key, app_env, oauth2_scheme
-from app.core.exceptions import auth_expired_token, auth_token_invalid, request_forbidden
+import jwt
+from fastapi import Depends, FastAPI
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+
+from app.core.config import (
+    access_token_expire_time,
+    app_env,
+    jwt_algorithm,
+    oauth2_scheme,
+    refresh_token_expire_time,
+    secret_key,
+)
 from app.core.enums import UserRole
-from app.db.models import User, Request, Comment
-from app.db.session import engine, SessionDep
+from app.core.exceptions import (
+    auth_expired_token,
+    auth_token_invalid,
+    request_forbidden,
+)
+from app.db.models import Comment, Request, User
 from app.db.repository import init_db
+from app.db.session import SessionDep, engine
 from app.migrations.insert_preset_data import set_preset_data
+from app.schemas.auth import NewToken
 
 
 async def app_lifespan(app: FastAPI):
@@ -34,16 +46,13 @@ def generate_new_token(access_user_data: dict, refresh_user_data: dict) -> NewTo
 
     return NewToken(
         access_token=jwt.encode(access_token_data, secret_key, jwt_algorithm),
-        refresh_token=jwt.encode(refresh_token_data, secret_key, jwt_algorithm)
-        )
+        refresh_token=jwt.encode(refresh_token_data, secret_key, jwt_algorithm),
+    )
 
 
 def generate_access_user_data(user: User, scopes: list[int]):
-    user_data = {
-        "sub": str(user.id),
-        "role": user.role
-        }
-    
+    user_data = {"sub": str(user.id), "role": user.role}
+
     if user.role == UserRole.resolver:
         user_data.update({"scopes": scopes})
         return user_data
@@ -73,25 +82,27 @@ def get_payload(token: Annotated[str, Depends(oauth2_scheme)]) -> dict[str, Any]
         raise auth_token_invalid
 
 
-async def get_user(session: SessionDep, payload: Annotated[dict[str, Any], Depends(get_payload)]):
+async def get_user(
+    session: SessionDep, payload: Annotated[dict[str, Any], Depends(get_payload)]
+):
     return await session.get(User, int(payload["sub"]))
 
 
 def check_request_available(
-        payload: Annotated[dict[str, Any], Depends(get_payload)],
-        request: Request
+    payload: Annotated[dict[str, Any], Depends(get_payload)], request: Request
 ) -> bool:
-    if set(["*", f"service:{request.service_id}"]) & set(payload["scopes"]) or request.customer_id == int(payload["sub"]):
+    if set(["*", f"service:{request.service_id}"]) & set(
+        payload["scopes"]
+    ) or request.customer_id == int(payload["sub"]):
         return True
-    
+
     return False
 
 
 def check_comment_available(
-        payload: Annotated[dict[str, Any], Depends(get_payload)],
-        comment: Comment
+    payload: Annotated[dict[str, Any], Depends(get_payload)], comment: Comment
 ) -> bool:
     if payload["role"] != UserRole.admin and int(payload["sub"]) != comment.author_id:
         return False
-    
+
     return True

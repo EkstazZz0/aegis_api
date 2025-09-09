@@ -1,9 +1,10 @@
-import os
-from typing import Any
-from passlib.context import CryptContext
-from datetime import timedelta
-from fastapi.security import OAuth2PasswordBearer
 import logging
+import os
+from datetime import timedelta
+from typing import Any
+
+from fastapi.security import OAuth2PasswordBearer
+from passlib.context import CryptContext
 
 from app.core.enums import AppEnv
 
@@ -15,7 +16,9 @@ logging.basicConfig(
 app_env = AppEnv(os.getenv("APP_ENV", "test")).value
 
 secret_key = os.environ["SECRET_KEY"]
-access_token_expire_time = timedelta(minutes=int(os.getenv("ACCESS_TOKEN_MINUTES", "30")))
+access_token_expire_time = timedelta(
+    minutes=int(os.getenv("ACCESS_TOKEN_MINUTES", "30"))
+)
 refresh_token_expire_time = timedelta(days=int(os.getenv("REFRESH_TOKEN_DAYS", "7")))
 jwt_algorithm = "HS256"
 

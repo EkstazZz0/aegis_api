@@ -1,11 +1,12 @@
-from sqlmodel import SQLModel, Field
-from pydantic import field_validator
-from uuid import UUID, uuid4
-from datetime import datetime
 import re
+from datetime import datetime
+from uuid import UUID, uuid4
+
+from pydantic import field_validator
+from sqlmodel import Field, SQLModel
 
 from app.core.config import refresh_token_expire_time
-from app.core.enums import UserRole, RequestStatus
+from app.core.enums import RequestStatus, UserRole
 from app.core.exceptions import invalid_phone_number
 
 
@@ -37,16 +38,18 @@ class User(SQLModel, table=True):
     full_name: str = Field(nullable=False, max_length=150)
     phone_number: str = Field(unique=True)
     role: UserRole | None = Field(default=UserRole.customer, nullable=False)
-    medical_organisation_id: int = Field(foreign_key="medical_organisations.id", ondelete="SET NULL", nullable=True)
+    active: bool | None = Field(default=True)
+    medical_organisation_id: int = Field(
+        foreign_key="medical_organisations.id", ondelete="SET NULL", nullable=True
+    )
 
-
-    @field_validator('phone_number')
+    @field_validator("phone_number")
     def validate_phone_number(cls, v):
-        phone_regex = r'^\+79\d{9}$'
+        phone_regex = r"^\+79\d{9}$"
 
         if not re.match(phone_regex, v):
             raise invalid_phone_number
-        
+
         return v
 
 
@@ -54,7 +57,9 @@ class Request(SQLModel, table=True):
     __tablename__ = "requests"
 
     id: int | None = Field(default=None, primary_key=True)
-    service_id: int = Field(foreign_key="services.id", ondelete="SET NULL", nullable=True)
+    service_id: int = Field(
+        foreign_key="services.id", ondelete="SET NULL", nullable=True
+    )
     customer_id: int = Field(foreign_key="users.id", ondelete="RESTRICT")
     title: str = Field(max_length=60, nullable=False)
     vipnet_node: str = Field(max_length=250, nullable=False)
@@ -64,13 +69,12 @@ class Request(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.now)
 
     def __setattr__(self, name, value):
-        if name != 'updated_at' and hasattr(self, name):
-            super().__setattr__('updated_at', datetime.now())
-        
+        if name != "updated_at" and hasattr(self, name):
+            super().__setattr__("updated_at", datetime.now())
+
         return super().__setattr__(name, value)
-    
-    
-    def sqlmodel_update(self, obj, *, update = None):
+
+    def sqlmodel_update(self, obj, *, update=None):
         self.updated_at = datetime.now()
         return super().sqlmodel_update(obj, update=update)
 
@@ -79,7 +83,9 @@ class Comment(SQLModel, table=True):
     __tablename__ = "comments"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    request_id: int = Field(foreign_key="requests.id", ondelete="RESTRICT", nullable=False)
+    request_id: int = Field(
+        foreign_key="requests.id", ondelete="RESTRICT", nullable=False
+    )
     author_id: int = Field(foreign_key="users.id", ondelete="RESTRICT", nullable=False)
     content: str = Field(max_length=500, nullable=False)
 
@@ -105,14 +111,13 @@ class UserSession(SQLModel, table=True):
     expired_at: datetime | None = Field(default_factory=default_expired_at)
 
     def __setattr__(self, name, value):
-        if name != 'last_login' and hasattr(self, name):
-            super().__setattr__('last_login', datetime.now())
-            super().__setattr__('expired_at', default_expired_at())
-        
+        if name != "last_login" and hasattr(self, name):
+            super().__setattr__("last_login", datetime.now())
+            super().__setattr__("expired_at", default_expired_at())
+
         return super().__setattr__(name, value)
-    
-    
-    def sqlmodel_update(self, obj, *, update = None):
+
+    def sqlmodel_update(self, obj, *, update=None):
         self.last_login = datetime.now()
         self.expired_at = default_expired_at()
         return super().sqlmodel_update(obj, update=update)
