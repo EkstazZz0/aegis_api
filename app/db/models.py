@@ -8,6 +8,7 @@ from sqlmodel import Field, SQLModel
 from app.core.config import refresh_token_expire_time
 from app.core.enums import RequestStatus, UserRole
 from app.core.exceptions import invalid_phone_number
+from app.schemas.custom_fields import PhoneNumber
 
 
 def default_expired_at():
@@ -36,21 +37,12 @@ class User(SQLModel, table=True):
     username: str = Field(max_length=15, nullable=False, unique=True, index=True)
     password: str = Field(nullable=False, max_length=60)
     full_name: str = Field(nullable=False, max_length=150)
-    phone_number: str = Field(unique=True)
+    phone_number: PhoneNumber = Field(unique=True)
     role: UserRole | None = Field(default=UserRole.customer, nullable=False)
     active: bool | None = Field(default=True)
     medical_organisation_id: int = Field(
         foreign_key="medical_organisations.id", ondelete="SET NULL", nullable=True
     )
-
-    @field_validator("phone_number")
-    def validate_phone_number(cls, v):
-        phone_regex = r"^\+79\d{9}$"
-
-        if not re.match(phone_regex, v):
-            raise invalid_phone_number
-
-        return v
 
 
 class Request(SQLModel, table=True):
