@@ -5,7 +5,7 @@ from sqlmodel import Field, SQLModel
 
 from app.core.exceptions import invalid_phone_number
 from app.core.enums import UserRole
-from app.schemas.custom_fields import PhoneNumber
+from app.schemas.custom_fields import PhoneNumber, Password
 
 class UserPublic(SQLModel):
     id: int
@@ -19,7 +19,7 @@ class UserPublic(SQLModel):
 
 class UserCreate(SQLModel):
     username: str = Field(max_length=15)
-    password: str = Field(min_length=8, max_length=60)
+    password: Password
     full_name: str = Field(max_length=150)
     phone_number: PhoneNumber
     medical_organisation_id: int
@@ -31,7 +31,9 @@ class UserUpdate(SQLModel):
     medical_organisation_id: int | None = Field(default=None)
 
 
-class UserUpdateAdmin(UserUpdate):
-    active: bool
-    password: str = Field(max_length=60)
+class AdminChangePassword(SQLModel):
+    new_password: Password
 
+
+class UserChangePasword(AdminChangePassword):
+    current_password: str = Field(min_length=8, max_length=256)

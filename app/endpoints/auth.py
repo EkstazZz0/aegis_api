@@ -13,6 +13,7 @@ from app.core.exceptions import (
     medical_organisation_not_found,
     user_already_exists,
     user_not_found,
+    user_blocked
 )
 from app.core.utils import (
     generate_access_user_data,
@@ -71,6 +72,9 @@ async def authentication(
     user = await authenticate_user(
         session=session, username=form.username, password=form.password
     )
+
+    if not user.active:
+        raise user_blocked
 
     user_session = (
         (
@@ -160,6 +164,9 @@ async def refresh_token(
 
     if not user:
         raise auth_token_invalid
+    
+    if not user.active:
+        raise user_blocked
 
     user_session = (
         (

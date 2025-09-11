@@ -1,14 +1,14 @@
 from typing import Annotated, Any
-
+from sqlmodel import select
 from fastapi import APIRouter, Depends, Query
 
-from app.core.config import oauth2_scheme
-from app.core.exceptions import medical_organisation_not_found, forbidden, user_not_found
+from app.core.config import pwd_context
+from app.core.exceptions import medical_organisation_not_found, forbidden, user_not_found, invlaid_change_password
 from app.core.utils import get_user, get_payload, check_request_available
 from app.core.enums import UserRole
-from app.db.models import MedicalOrganisation, User, Request
+from app.db.models import MedicalOrganisation, User, Request, UserSession
 from app.db.session import SessionDep
-from app.schemas.users import UserPublic, UserUpdate, UserUpdateAdmin
+from app.schemas.users import UserPublic, UserUpdate, AdminChangePassword, UserChangePasword
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -39,10 +39,25 @@ async def edit_my_user(
 
 @router.put("/password/me")
 async def change_my_password(
-    sesion: SessionDep,
-    user: Annotated[User, Depends(get_user)]
+    session: SessionDep,
+    user: Annotated[User, Depends(get_user)],
+    password_data: UserChangePasword
 ):
-    pass
+    if not pwd_context.verify(password_data.current_password, user.password):
+        raise invlaid_change_password
+    
+    user_sessions = (await session.execute(select(UserSession).where(UserSession.user_id == user.id))).scalars().all()
+
+    if user_sessions:
+        for user_session in user_sessions:
+            await session.delete(user_session)
+    
+    user.password = pwd_context.hash(password_data.new_password)
+
+    session.add()
+    await session.commit()
+    
+    return {"success": True}
 
 
 @router.get("/{user_id}")

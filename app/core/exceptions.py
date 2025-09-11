@@ -5,6 +5,11 @@ user_already_exists = HTTPException(
     detail="A user with the provided data already exists",
 )
 
+user_blocked = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="User blocked"
+)
+
 auth_ivalid_credentials = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password"
 )
@@ -37,6 +42,11 @@ user_not_found = HTTPException(
 invalid_phone_number = ValueError("Invalid phone number")
 
 invalid_username = ValueError("Invalid username")
+
+invlaid_change_password = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Provided password invalid"
+)
 
 service_not_found = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND, detail="Service not found"
