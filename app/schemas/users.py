@@ -3,9 +3,10 @@ import re
 from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
-from app.core.exceptions import invalid_phone_number
 from app.core.enums import UserRole
-from app.schemas.custom_fields import PhoneNumber, Password
+from app.core.exceptions import invalid_phone_number
+from app.schemas.custom_fields import Password, PhoneNumber
+
 
 class UserPublic(SQLModel):
     id: int
@@ -29,6 +30,10 @@ class UserUpdate(SQLModel):
     full_name: str | None = Field(default=None, max_length=150)
     phone_number: PhoneNumber | None = Field(default=None)
     medical_organisation_id: int | None = Field(default=None)
+
+
+class UserUpdateAdmin(UserUpdate):
+    role: UserRole
 
 
 class AdminChangePassword(SQLModel):

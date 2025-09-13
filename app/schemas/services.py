@@ -1,4 +1,5 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
+
 
 class GetServiceFilterData(SQLModel):
     limit: int | None = Field(default=50, gt=0, le=1000)

@@ -12,8 +12,8 @@ from app.core.exceptions import (
     auth_token_invalid,
     medical_organisation_not_found,
     user_already_exists,
+    user_blocked,
     user_not_found,
-    user_blocked
 )
 from app.core.utils import (
     generate_access_user_data,
@@ -164,7 +164,7 @@ async def refresh_token(
 
     if not user:
         raise auth_token_invalid
-    
+
     if not user.active:
         raise user_blocked
 
@@ -183,7 +183,7 @@ async def refresh_token(
 
     if not user_session:
         raise auth_token_invalid
-    
+
     info_message = ""
 
     if user_session.fingerprint != device_data.fingerprint:
