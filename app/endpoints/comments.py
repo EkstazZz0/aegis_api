@@ -15,7 +15,7 @@ from app.db.repository import get_comments as db_get_comments
 from app.db.session import SessionDep
 from app.schemas.comments import CommentCreate, CommentPublic, GetComments
 
-router = APIRouter(prefix="/comments", tags=["comments"])
+router = APIRouter(prefix="/comments", tags=["Comments"])
 
 
 @router.post("", response_model=Comment)

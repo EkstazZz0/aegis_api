@@ -22,7 +22,7 @@ from app.schemas.users import (
     UserUpdateAdmin,
 )
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.get("/me", response_model=UserPublic)

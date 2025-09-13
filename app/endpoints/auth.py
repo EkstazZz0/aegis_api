@@ -31,7 +31,7 @@ from app.schemas.users import UserCreate
 logger = logging.getLogger(__name__)
 
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 class DeviceHeader(SQLModel):

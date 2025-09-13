@@ -11,7 +11,7 @@ from app.db.models import Request, Service
 from app.db.session import SessionDep
 from app.schemas.requests import GetRequests, RequestCreate
 
-router = APIRouter(prefix="/requests", tags=["requests"])
+router = APIRouter(prefix="/requests", tags=["Requests"])
 
 
 @router.post("", response_model=Request)
