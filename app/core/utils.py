@@ -5,6 +5,7 @@ from typing import Annotated, Any
 
 import jwt
 from fastapi import Depends, FastAPI
+from fastapi.security import HTTPAuthorizationCredentials
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 from app.core.config import (
@@ -20,6 +21,7 @@ from app.core.exceptions import (
     auth_expired_token,
     auth_token_invalid,
     request_forbidden,
+    auth_wrong_token_provided,
 )
 from app.db.models import Comment, Request, User
 from app.db.repository import init_db
@@ -51,7 +53,7 @@ def generate_new_token(access_user_data: dict, refresh_user_data: dict) -> NewTo
 
 
 def generate_access_user_data(user: User, scopes: list[int]):
-    user_data = {"sub": str(user.id), "role": user.role}
+    user_data = {"sub": str(user.id), "role": user.role, "token_type": "access"}
 
     if user.role == UserRole.resolver:
         user_data.update({"scopes": scopes})
@@ -66,6 +68,7 @@ def generate_access_user_data(user: User, scopes: list[int]):
 def generate_refresh_user_data(user: User):
     return {
         "sub": str(user.id),
+        "token_type": "refresh"
     }
 
 
@@ -73,17 +76,27 @@ def generate_resolver_scopes(services_id: list[int]):
     return [f"service:{service_id}" for service_id in services_id]
 
 
-def get_payload(token: Annotated[str, Depends(oauth2_scheme)]) -> dict[str, Any]:
+def get_payload(token: HTTPAuthorizationCredentials = Depends(oauth2_scheme)) -> dict[str, Any]:
+    if isinstance(token, HTTPAuthorizationCredentials):
+        token = token.credentials
     try:
+        print(jwt.decode(token, secret_key, jwt_algorithm))
         return jwt.decode(token, secret_key, jwt_algorithm)
     except ExpiredSignatureError:
         raise auth_expired_token
     except InvalidTokenError:
         raise auth_token_invalid
+    
+
+def get_payload_from_access_token(payload: Annotated[dict[str, Any], Depends(get_payload)]):
+    if payload["token_type"] != "access":
+        raise auth_wrong_token_provided
+
+    return payload
 
 
 async def get_user(
-    session: SessionDep, payload: Annotated[dict[str, Any], Depends(get_payload)]
+    session: SessionDep, payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)]
 ):
     return await session.get(User, int(payload["sub"]))
 

@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 from typing import Any
 
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
 from passlib.context import CryptContext
 
 from app.core.enums import AppEnv
@@ -24,7 +24,7 @@ jwt_algorithm = "HS256"
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth")
+oauth2_scheme = HTTPBearer()
 
 admin_password = os.environ["ADMIN_PASSWORD"]
 

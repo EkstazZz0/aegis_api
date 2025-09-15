@@ -9,7 +9,7 @@ from app.core.exceptions import (
     request_forbidden,
     request_not_found,
 )
-from app.core.utils import check_comment_available, check_request_available, get_payload
+from app.core.utils import check_comment_available, check_request_available, get_payload_from_access_token
 from app.db.models import Comment, Request
 from app.db.repository import get_comments as db_get_comments
 from app.db.session import SessionDep
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/comments", tags=["Comments"])
 async def write_comment(
     session: SessionDep,
     comment_data: CommentCreate,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
     request = await session.get(Request, comment_data.request_id)
 
@@ -46,7 +46,7 @@ async def edit_comment(
     session: SessionDep,
     comment_id: int,
     content: Annotated[str, Body(max_length=500)],
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
     comment = await session.get(Comment, comment_id)
 
@@ -65,7 +65,7 @@ async def edit_comment(
 async def get_comments(
     session: SessionDep,
     filter_data: Annotated[GetComments, Query()],
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
     request = await session.get(Request, filter_data.request_id)
 
@@ -82,7 +82,7 @@ async def get_comments(
 async def delete_comment(
     session: SessionDep,
     comment_id: int,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
     comment = await session.get(Comment, comment_id)
 

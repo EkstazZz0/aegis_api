@@ -11,7 +11,7 @@ from app.core.exceptions import (
     medical_organisation_not_found,
     user_not_found,
 )
-from app.core.utils import check_request_available, get_payload, get_user
+from app.core.utils import check_request_available, get_payload_from_access_token, get_user as get_user_from_payload
 from app.db.models import MedicalOrganisation, Request, User, UserSession
 from app.db.session import SessionDep
 from app.schemas.users import (
@@ -26,14 +26,14 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.get("/me", response_model=UserPublic)
-async def get_my_user(user: Annotated[User, Depends(get_user)]):
+async def get_my_user(user: Annotated[User, Depends(get_user_from_payload)]):
     return user
 
 
 @router.patch("/me", response_model=UserPublic)
 async def edit_my_user(
     session: SessionDep,
-    user: Annotated[User, Depends(get_user)],
+    user: Annotated[User, Depends(get_user_from_payload)],
     update_data: UserUpdate,
 ):
     if update_data.medical_organisation_id and not (
@@ -52,7 +52,7 @@ async def edit_my_user(
 @router.put("/password/me")
 async def change_my_password(
     session: SessionDep,
-    user: Annotated[User, Depends(get_user)],
+    user: Annotated[User, Depends(get_user_from_payload)],
     password_data: UserChangePasword,
 ):
     if not pwd_context.verify(password_data.current_password, user.password):
@@ -84,7 +84,7 @@ async def change_my_password(
 async def get_user(
     session: SessionDep,
     user_id: int,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
     request_id: Annotated[int | None, Query()],
 ):
     if payload["role"] == UserRole.customer:
@@ -108,7 +108,7 @@ async def get_user(
 async def edit_user(
     session: SessionDep,
     user_id: int,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
     update_data: UserUpdateAdmin,
 ):
     if payload["role"] != UserRole.admin:
@@ -136,7 +136,7 @@ async def edit_user(
 async def change_user_status(
     session: SessionDep,
     user_id: int,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
     active: Annotated[bool, Query()],
 ):
     if payload["role"] != UserRole.admin:
@@ -161,7 +161,7 @@ async def change_user_password(
     session: SessionDep,
     user_id: int,
     password_data: AdminChangePassword,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
     if payload["role"] != UserRole.admin:
         raise forbidden
@@ -177,3 +177,13 @@ async def change_user_password(
     await session.commit(user)
 
     return {"success": True}
+
+
+@router.put("/{user_id}/role")
+async def change_user_role():
+    pass
+
+
+@router.put("/{user_id}/services")
+async def change_resolver_services():
+    pass

@@ -221,3 +221,29 @@ async def refresh_token(
     await session.refresh(user_session)
 
     return token
+
+
+@router.get("/logout")
+async def logout(
+    session: SessionDep,
+    token_data: RefreshToken,
+):
+    
+    user_sessions = (
+        (
+            await session.execute(
+                select(UserSession)
+                .where(UserSession.refresh_token == token_data.refresh_token)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    if user_sessions:
+        for user_session in user_sessions:
+            await session.delete(user_session)
+        
+        await session.commit()
+    
+    return {"success": True}

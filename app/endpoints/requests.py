@@ -6,7 +6,7 @@ from sqlmodel import select
 
 from app.core.enums import RequestStatus, UserRole
 from app.core.exceptions import request_forbidden, request_not_found, service_not_found
-from app.core.utils import check_request_available, get_payload
+from app.core.utils import check_request_available, get_payload_from_access_token
 from app.db.models import Request, Service
 from app.db.session import SessionDep
 from app.schemas.requests import GetRequests, RequestCreate
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/requests", tags=["Requests"])
 async def create_request(
     session: SessionDep,
     request_data: RequestCreate,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
 
     if not await session.get(Service, request_data.service_id):
@@ -36,8 +36,8 @@ async def create_request(
 @router.get("/{request_id}")
 async def get_request(
     session: SessionDep,
-    request_id: UUID,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    request_id: int,
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
     request = await session.get(Request, request_id)
 
@@ -54,14 +54,14 @@ async def get_request(
 async def get_requests(
     session: SessionDep,
     get_data: Annotated[GetRequests, Query()],
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
     statement = (
         select(Request).limit(limit=get_data.limit).offset(offset=get_data.offset)
     )
 
     if payload["role"] == UserRole.customer:
-        statement = statement.where(Request.customer_id == payload["user_id"])
+        statement = statement.where(Request.customer_id == int(payload["sub"]))
     elif payload["role"] == UserRole.resolver:
         statement = statement.where(
             Request.service_id.in_(
@@ -83,7 +83,7 @@ async def change_request_status(
     session: SessionDep,
     request_id: int,
     request_status: Annotated[RequestStatus, Query()],
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
     request = await session.get(Request, request_id)
 

@@ -1,12 +1,12 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 from app.core.enums import UserRole
-from app.core.exceptions import forbidden, service_not_found
-from app.core.utils import get_payload
+from app.core.exceptions import forbidden, service_not_found, service_exists
+from app.core.utils import get_payload_from_access_token
 from app.db.models import Service
 from app.db.session import SessionDep
 from app.schemas.services import GetServiceFilterData, EditService, CreateService
@@ -40,19 +40,24 @@ async def get_services(
     return (await session.execute(statement)).scalars().all()
 
 
-@router.post("")
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_service(
     session: SessionDep,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
-    service_data: CreateService
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
+    service_data: CreateService,
 ):
     if payload["role"] != UserRole.admin:
         raise forbidden
     
     service = Service.model_validate(service_data)
 
-    await session.add(service)
-    await session.commit()
+    session.add(service)
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        raise service_exists
+    
     await session.refresh(service)
 
     return service
@@ -62,7 +67,7 @@ async def create_service(
 async def delete_service(
     session: SessionDep,
     service_id: int,
-    payload: Annotated[dict[str, Any], Depends(get_payload)]
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)]
 ):
     if payload["role"] != UserRole.admin:
         raise forbidden
@@ -82,7 +87,7 @@ async def delete_service(
 async def edit_service(
     session: SessionDep,
     service_id: int,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
     service_data: EditService
 ):
     if payload["role"] != UserRole.admin:

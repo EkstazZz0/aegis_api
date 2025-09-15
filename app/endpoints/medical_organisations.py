@@ -10,7 +10,7 @@ from app.core.exceptions import (
     medical_organisation_exists,
     medical_organisation_not_found,
 )
-from app.core.utils import get_payload
+from app.core.utils import get_payload_from_access_token
 from app.db.models import MedicalOrganisation
 from app.db.session import SessionDep
 from app.schemas.medical_organisations import (
@@ -58,7 +58,7 @@ async def edit_medical_organisation(
     session: SessionDep,
     mo_id: int,
     update_data: EditMedicalOrganisation,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
 
     if payload["role"] != UserRole.admin:
@@ -87,7 +87,7 @@ async def edit_medical_organisation(
 async def create_medical_organisation(
     session: SessionDep,
     create_data: CreateMedicalOrganisation,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
     if payload["role"] != UserRole.admin:
         raise forbidden
@@ -109,7 +109,7 @@ async def create_medical_organisation(
 async def delete_medical_organisation(
     session: SessionDep,
     mo_id: int,
-    payload: Annotated[dict[str, Any], Depends(get_payload)],
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
 
     if payload["role"] != UserRole.admin:

@@ -25,6 +25,11 @@ auth_token_inactive = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inactive"
 )
 
+auth_wrong_token_provided = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Required token with acces token type"
+)
+
 medical_organisation_not_found = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND, detail="Medical organisation not found"
 )
@@ -48,6 +53,11 @@ invlaid_change_password = HTTPException(
 
 service_not_found = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND, detail="Service not found"
+)
+
+service_exists = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="Status already exists"
 )
 
 request_not_found = HTTPException(
