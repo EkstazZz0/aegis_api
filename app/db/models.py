@@ -82,8 +82,8 @@ class Comment(SQLModel, table=True):
     content: str = Field(max_length=500, nullable=False)
 
 
-class ResolverScope(SQLModel, table=True):
-    __tablename__ = "resolver_scopes"
+class ResolverService(SQLModel, table=True):
+    __tablename__ = "resolver_services"
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", ondelete="CASCADE")

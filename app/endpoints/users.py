@@ -12,7 +12,8 @@ from app.core.exceptions import (
     user_not_found,
 )
 from app.core.utils import check_request_available, get_payload_from_access_token, get_user as get_user_from_payload
-from app.db.models import MedicalOrganisation, Request, User, UserSession
+from app.db.models import MedicalOrganisation, Request, User, UserSession, ResolverService
+from app.db.repository import get_user as db_get_user, update_resolver_services as db_update_resolver_services
 from app.db.session import SessionDep
 from app.schemas.users import (
     AdminChangePassword,
@@ -20,6 +21,7 @@ from app.schemas.users import (
     UserPublic,
     UserUpdate,
     UserUpdateAdmin,
+    UserCreateResolverServices,
 )
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -85,7 +87,7 @@ async def get_user(
     session: SessionDep,
     user_id: int,
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
-    request_id: Annotated[int | None, Query()],
+    request_id: Annotated[int | None, Query(default=None)],
 ):
     if payload["role"] == UserRole.customer:
         raise forbidden
@@ -179,11 +181,45 @@ async def change_user_password(
     return {"success": True}
 
 
-@router.put("/{user_id}/role")
-async def change_user_role():
-    pass
+@router.put("/{user_id}/role", response_model=UserPublic)
+async def change_user_role(
+    session: SessionDep,
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
+    user_id: int,
+    new_role: Annotated[UserRole, Query()],
+):
+    if payload['role'] != UserRole.admin:
+        raise forbidden
+    
+    user = await session.get(User, user_id)
+
+    if not user:
+        raise user_not_found
+    
+    user.role = new_role
+
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
+    return user
 
 
 @router.put("/{user_id}/services")
-async def change_resolver_services():
-    pass
+async def update_resolver_services(
+    session: SessionDep,
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
+    user_id: int,
+    service_data: UserCreateResolverServices,
+):
+    if payload['role'] != UserRole.admin:
+        raise forbidden
+    
+    user = await db_get_user(session=session, user_id=user_id)
+    
+    if user.role != UserRole.resolver:
+        raise forbidden
+    
+    await db_update_resolver_services(session=session, resolver=user, services_ids=service_data.services_id)
+
+    return {"success": True}

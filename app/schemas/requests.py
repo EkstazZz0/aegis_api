@@ -15,5 +15,5 @@ class RequestCreate(SQLModel):
 class GetRequests(SQLModel):
     limit: int | None = Field(default=50, gt=0, le=100)
     offset: int | None = Field(default=0, ge=0)
-    statuses: list[RequestStatus] | None = Field(default=None)
-    services_id: int | None = Field(default=None)
+    statuses: list[RequestStatus] | None = Field(default=[])
+    services_id: list[int] | None = Field(default=[])

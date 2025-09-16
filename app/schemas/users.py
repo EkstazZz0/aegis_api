@@ -42,3 +42,7 @@ class AdminChangePassword(SQLModel):
 
 class UserChangePasword(AdminChangePassword):
     current_password: str = Field(min_length=8, max_length=256)
+
+
+class UserCreateResolverServices(SQLModel):
+    services_id: list[int] = Field()

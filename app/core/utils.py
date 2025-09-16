@@ -52,7 +52,7 @@ def generate_new_token(access_user_data: dict, refresh_user_data: dict) -> NewTo
     )
 
 
-def generate_access_user_data(user: User, scopes: list[int]):
+def generate_access_user_data(user: User, scopes: list[str]):
     user_data = {"sub": str(user.id), "role": user.role, "token_type": "access"}
 
     if user.role == UserRole.resolver:

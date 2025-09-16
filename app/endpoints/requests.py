@@ -63,9 +63,10 @@ async def get_requests(
     if payload["role"] == UserRole.customer:
         statement = statement.where(Request.customer_id == int(payload["sub"]))
     elif payload["role"] == UserRole.resolver:
+        scopes_services_ids = [int(scope.split("service:")[1]) for scope in payload["scopes"]]
         statement = statement.where(
             Request.service_id.in_(
-                list(set(payload["scopes"]) & set(get_data.services_id))
+                list(set(scopes_services_ids) & set(get_data.services_id))
             )
         )
     else:
@@ -93,10 +94,10 @@ async def change_request_status(
     if (
         payload["role"] == UserRole.customer
         and request_status != RequestStatus.done
-        and payload["user_id"] != request.customer_id
+        and int(payload["sub"]) != request.customer_id
     ) or (
         payload["role"] == UserRole.resolver
-        and not (request.service_id in payload["scopes"])
+        and not (f"service:{request.service_id}" in payload["scopes"])
     ):
         raise request_forbidden
 
