@@ -43,6 +43,10 @@ user_not_found = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
 )
 
+user_not_resolver = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST, detail="User is not a resolver"
+)
+
 invalid_phone_number = ValueError("Invalid phone number")
 
 invalid_username = ValueError("Invalid username")

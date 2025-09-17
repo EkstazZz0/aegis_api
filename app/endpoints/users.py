@@ -12,8 +12,8 @@ from app.core.exceptions import (
     user_not_found,
 )
 from app.core.utils import check_request_available, get_payload_from_access_token, get_user as get_user_from_payload
-from app.db.models import MedicalOrganisation, Request, User, UserSession, ResolverService
-from app.db.repository import get_user as db_get_user, update_resolver_services as db_update_resolver_services
+from app.db.models import MedicalOrganisation, Request, User, UserSession, ResolverService, Service
+from app.db.repository import get_user as db_get_user, update_resolver_services as db_update_resolver_services, get_resolver_services_ids
 from app.db.session import SessionDep
 from app.schemas.users import (
     AdminChangePassword,
@@ -87,7 +87,7 @@ async def get_user(
     session: SessionDep,
     user_id: int,
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
-    request_id: Annotated[int | None, Query(default=None)],
+    request_id: int | None = Query(default=None),
 ):
     if payload["role"] == UserRole.customer:
         raise forbidden
@@ -223,3 +223,21 @@ async def update_resolver_services(
     await db_update_resolver_services(session=session, resolver=user, services_ids=service_data.services_id)
 
     return {"success": True}
+
+@router.get("/{user_id}/services", response_model=list[Service])
+async def get_resolver_services(
+    session: SessionDep,
+    user_id: int,
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
+):
+    if payload['role'] != UserRole.admin:
+        raise forbidden
+    
+    user = await db_get_user(session=session, user_id=user_id)
+
+    if user.role != UserRole.resolver:
+        raise forbidden
+    
+    resolver_services = await get_resolver_services_ids(session=session, user_id=user.id)
+    
+    return (await session.execute(select(Service).where(Service.id.in_(resolver_services)))).scalars().all()

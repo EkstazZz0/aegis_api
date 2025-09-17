@@ -2,7 +2,6 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Query
 
-from app.core.enums import UserRole
 from app.core.exceptions import (
     comment_forbidden,
     comment_not_found,
