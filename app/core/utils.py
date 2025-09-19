@@ -104,9 +104,7 @@ async def get_user(
 def check_request_available(
     payload: Annotated[dict[str, Any], Depends(get_payload)], request: Request
 ) -> bool:
-    if set(["*", f"service:{request.service_id}"]) & set(
-        payload["scopes"]
-    ) or request.customer_id == int(payload["sub"]):
+    if payload.get("scopes") and set(["*", f"service:{request.service_id}"]) & set(payload["scopes"]) or request.customer_id == int(payload["sub"]):
         return True
 
     return False

@@ -16,7 +16,13 @@ def validate_phone_number(v: str):
 
 
 def validate_username(v: str):
-    if not v.isascii() or " " in v:
+    if not v.isascii():
+        raise invalid_username
+    
+    if not all(char.isalpha() or char.isdigit() for char in v):
+        raise invalid_username
+    
+    if len(v) > 15:
         raise invalid_username
 
     return v
@@ -43,3 +49,4 @@ def validate_password(v: str):
 
 PhoneNumber = Annotated[str, AfterValidator(validate_phone_number)]
 Password = Annotated[str, AfterValidator(validate_password)]
+Username = Annotated[str, AfterValidator(validate_username)]

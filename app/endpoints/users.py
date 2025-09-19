@@ -22,33 +22,10 @@ from app.schemas.users import (
     UserUpdate,
     UserUpdateAdmin,
     UserCreateResolverServices,
+    GetUsersFilterData,
 )
 
 router = APIRouter(prefix="/users", tags=["Users"])
-
-
-@router.get("/me", response_model=UserPublic)
-async def get_my_user(user: Annotated[User, Depends(get_user_from_payload)]):
-    return user
-
-
-@router.patch("/me", response_model=UserPublic)
-async def edit_my_user(
-    session: SessionDep,
-    user: Annotated[User, Depends(get_user_from_payload)],
-    update_data: UserUpdate,
-):
-    if update_data.medical_organisation_id and not (
-        await session.get(MedicalOrganisation, update_data.medical_organisation_id)
-    ):
-        raise medical_organisation_not_found
-
-    user.sqlmodel_update(update_data.model_dump(exclude_unset=True))
-
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
-    return user
 
 
 @router.put("/password/me")
@@ -82,13 +59,16 @@ async def change_my_password(
     return {"success": True}
 
 
-@router.get("/{user_id}")
+@router.get("/{user_id}", response_model=UserPublic)
 async def get_user(
     session: SessionDep,
     user_id: int,
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
     request_id: int | None = Query(default=None),
 ):
+    if int(payload['sub']) == user_id:
+        return await session.get(User, user_id)
+    
     if payload["role"] == UserRole.customer:
         raise forbidden
     elif payload["role"] == UserRole.resolver:
@@ -106,6 +86,43 @@ async def get_user(
     return await session.get(User, user_id)
 
 
+@router.get("", response_model=list[UserPublic])
+async def get_users(
+    session: SessionDep,
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
+    get_users_data: GetUsersFilterData
+):
+    if payload["role"] != UserRole.admin:
+        raise forbidden
+    
+    statement = select(User)
+
+    if get_users_data.username:
+        statement = statement.where(User.username == get_users_data.username)
+    
+    if get_users_data.phone_number:
+        statement = statement.where(User.phone_number == get_users_data.phone_number)
+    
+    if get_users_data.full_name:
+        substrings = get_users_data.full_name.split(" ")
+
+        for substring in substrings:
+            statement = statement.where(User.full_name.ilike(f"%{substring}%"))
+    
+    if get_users_data.role:
+        statement = statement.where(User.role==get_users_data.role)
+    
+    if get_users_data.active:
+        statement = statement.where(User.active == get_users_data.active)
+    
+    if get_users_data.medical_organisation_id:
+        statement = statement.where(User.medical_organisation_id == get_users_data.medical_organisation_id)
+
+    statement = statement.order_by(User.id).limit(get_users_data.limit).offset(get_users_data.offset)
+
+    return (await session.execute(statement)).scalars().all()
+
+
 @router.patch("/{user_id}", response_model=UserPublic)
 async def edit_user(
     session: SessionDep,
@@ -113,7 +130,7 @@ async def edit_user(
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
     update_data: UserUpdateAdmin,
 ):
-    if payload["role"] != UserRole.admin:
+    if payload["role"] != UserRole.admin or int(payload['sub']) != user_id:
         raise forbidden
 
     user = await session.get(User, user_id)
@@ -179,30 +196,6 @@ async def change_user_password(
     await session.commit(user)
 
     return {"success": True}
-
-
-@router.put("/{user_id}/role", response_model=UserPublic)
-async def change_user_role(
-    session: SessionDep,
-    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
-    user_id: int,
-    new_role: Annotated[UserRole, Query()],
-):
-    if payload['role'] != UserRole.admin:
-        raise forbidden
-    
-    user = await session.get(User, user_id)
-
-    if not user:
-        raise user_not_found
-    
-    user.role = new_role
-
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
-
-    return user
 
 
 @router.put("/{user_id}/services")

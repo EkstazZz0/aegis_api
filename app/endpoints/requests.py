@@ -56,17 +56,21 @@ async def get_requests(
     get_data: Annotated[GetRequests, Query()],
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
-    statement = (
-        select(Request).limit(limit=get_data.limit).offset(offset=get_data.offset)
-    )
+    statement = select(Request)
 
     if payload["role"] == UserRole.customer:
         statement = statement.where(Request.customer_id == int(payload["sub"]))
     elif payload["role"] == UserRole.resolver:
         scopes_services_ids = [int(scope.split("service:")[1]) for scope in payload["scopes"]]
+
+        filter_service_ids = list(set(scopes_services_ids) & set(get_data.services_id))
+
+        if not filter_service_ids:
+            filter_service_ids = scopes_services_ids
+        
         statement = statement.where(
             Request.service_id.in_(
-                list(set(scopes_services_ids) & set(get_data.services_id))
+                filter_service_ids
             )
         )
     else:
@@ -75,7 +79,9 @@ async def get_requests(
 
     if get_data.statuses:
         statement = statement.where(Request.status.in_(get_data.statuses))
-
+    
+    statement = statement.order_by(Request.id).limit(limit=get_data.limit).offset(offset=get_data.offset)
+    
     return (await session.execute(statement)).scalars().all()
 
 
@@ -93,8 +99,7 @@ async def change_request_status(
 
     if (
         payload["role"] == UserRole.customer
-        and request_status != RequestStatus.done
-        and int(payload["sub"]) != request.customer_id
+        and (request_status != RequestStatus.done or int(payload["sub"]) != request.customer_id)
     ) or (
         payload["role"] == UserRole.resolver
         and not (f"service:{request.service_id}" in payload["scopes"])

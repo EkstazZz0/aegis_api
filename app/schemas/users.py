@@ -4,8 +4,7 @@ from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
 from app.core.enums import UserRole
-from app.core.exceptions import invalid_phone_number
-from app.schemas.custom_fields import Password, PhoneNumber
+from app.schemas.custom_fields import Password, PhoneNumber, Username
 
 
 class UserPublic(SQLModel):
@@ -18,8 +17,19 @@ class UserPublic(SQLModel):
     role: UserRole
 
 
+class GetUsersFilterData(SQLModel):
+    limit: int | None = Field(default=50, gt=0, le=100)
+    offset: int | None = Field(default=0, ge=0)
+    username: Username | None = Field(default=None)
+    phone_number: PhoneNumber | None = Field(default=None)
+    full_name: str | None = Field(default=None, max_length=150)
+    role: UserRole | None = Field(default=None)
+    active: bool | None = Field(default=None)
+    medical_organisation_id: int | None = Field(default=None)
+
+
 class UserCreate(SQLModel):
-    username: str = Field(max_length=15)
+    username: Username
     password: Password
     full_name: str = Field(max_length=150)
     phone_number: PhoneNumber
@@ -33,7 +43,7 @@ class UserUpdate(SQLModel):
 
 
 class UserUpdateAdmin(UserUpdate):
-    role: UserRole
+    role: UserRole | None = Field(default=None)
 
 
 class AdminChangePassword(SQLModel):

@@ -31,7 +31,7 @@ async def write_comment(
     if not check_request_available(payload=payload, request=request):
         raise request_forbidden
 
-    comment = Comment.model_validate(**comment_data.model_dump_json())
+    comment = Comment.model_validate(**comment_data.model_dump())
 
     session.add(comment)
     await session.commit()

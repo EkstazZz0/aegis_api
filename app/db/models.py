@@ -7,8 +7,7 @@ from sqlmodel import Field, SQLModel
 
 from app.core.config import refresh_token_expire_time
 from app.core.enums import RequestStatus, UserRole
-from app.core.exceptions import invalid_phone_number
-from app.schemas.custom_fields import PhoneNumber
+from app.schemas.custom_fields import PhoneNumber, Username
 
 
 def default_expired_at():
@@ -34,7 +33,7 @@ class User(SQLModel, table=True):
     __tablename__ = "users"
 
     id: int | None = Field(default=None, primary_key=True)
-    username: str = Field(max_length=15, nullable=False, unique=True, index=True)
+    username: Username = Field(nullable=False, unique=True, index=True)
     password: str = Field(nullable=False, max_length=60)
     full_name: str = Field(nullable=False, max_length=150)
     phone_number: PhoneNumber = Field(unique=True)
