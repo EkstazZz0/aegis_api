@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 from typing import Any
 
-from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
 from passlib.context import CryptContext
 
 from app.core.enums import AppEnv

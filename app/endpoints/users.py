@@ -19,7 +19,6 @@ from app.schemas.users import (
     AdminChangePassword,
     UserChangePasword,
     UserPublic,
-    UserUpdate,
     UserUpdateAdmin,
     UserCreateResolverServices,
     GetUsersFilterData,

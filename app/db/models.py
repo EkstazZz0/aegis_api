@@ -1,8 +1,6 @@
-import re
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
 from app.core.config import refresh_token_expire_time

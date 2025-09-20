@@ -20,7 +20,6 @@ from app.core.enums import UserRole
 from app.core.exceptions import (
     auth_expired_token,
     auth_token_invalid,
-    request_forbidden,
     auth_wrong_token_provided,
 )
 from app.db.models import Comment, Request, User
@@ -31,7 +30,9 @@ from app.schemas.auth import NewToken
 
 
 async def app_lifespan(app: FastAPI):
-    await init_db()
+    if app_env == "test":
+        await init_db()
+    
     await set_preset_data()
     yield
     if app_env == "test":

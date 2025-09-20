@@ -1,5 +1,4 @@
 from typing import Annotated, Any
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import select

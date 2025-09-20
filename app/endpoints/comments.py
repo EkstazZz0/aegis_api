@@ -12,7 +12,7 @@ from app.core.utils import check_comment_available, check_request_available, get
 from app.db.models import Comment, Request
 from app.db.repository import get_comments as db_get_comments
 from app.db.session import SessionDep
-from app.schemas.comments import CommentCreate, CommentPublic, GetComments
+from app.schemas.comments import CommentCreate, GetComments
 
 router = APIRouter(prefix="/comments", tags=["Comments"])
 

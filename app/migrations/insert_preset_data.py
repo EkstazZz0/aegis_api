@@ -1217,8 +1217,10 @@ mo_list = [
 
 async def set_preset_data():
     async with async_session() as session:
-        for medical_organisation in mo_list:
-            session.add(medical_organisation)
+        if await session.get(User, 1):
+            return
+
+        session.add_all(mo_list)
 
         await session.commit()
 

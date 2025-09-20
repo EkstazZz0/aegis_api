@@ -1,6 +1,3 @@
-import re
-
-from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
 from app.core.enums import UserRole

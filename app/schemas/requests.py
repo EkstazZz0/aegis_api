@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from sqlmodel import Field, SQLModel
 
 from app.core.enums import RequestStatus

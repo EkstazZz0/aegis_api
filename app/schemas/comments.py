@@ -7,12 +7,6 @@ class GetComments(SQLModel):
     request_id: int = Field()
 
 
-class CommentPublic(SQLModel):
-    author_id: int
-    request_id: int
-    content: str
-
-
 class CommentCreate(SQLModel):
     request_id: int
     content: str = Field(max_length=500)

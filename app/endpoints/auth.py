@@ -6,14 +6,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, SQLModel, select
 
-from app.core.config import jwt_algorithm, pwd_context, secret_key
+from app.core.config import pwd_context
 from app.core.exceptions import (
     auth_expired_token,
     auth_token_invalid,
     medical_organisation_not_found,
     user_already_exists,
     user_blocked,
-    user_not_found,
 )
 from app.core.utils import (
     generate_access_user_data,
