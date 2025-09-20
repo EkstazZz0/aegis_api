@@ -67,7 +67,7 @@ async def get_user(
     request_id: int | None = Query(default=None),
 ):
     if int(payload['sub']) == user_id:
-        return await session.get(User, user_id)
+        return await db_get_user(session=session, user_id=user_id)
     
     if payload["role"] == UserRole.customer:
         raise forbidden
@@ -90,7 +90,7 @@ async def get_user(
 async def get_users(
     session: SessionDep,
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
-    get_users_data: GetUsersFilterData
+    get_users_data: Annotated[GetUsersFilterData, Query()]
 ):
     if payload["role"] != UserRole.admin:
         raise forbidden
@@ -130,7 +130,9 @@ async def edit_user(
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
     update_data: UserUpdateAdmin,
 ):
-    if payload["role"] != UserRole.admin or int(payload['sub']) != user_id:
+    if payload["role"] != UserRole.admin and int(payload['sub']) != user_id:
+        raise forbidden
+    if int(payload['sub']) == user_id and update_data.role:
         raise forbidden
 
     user = await session.get(User, user_id)

@@ -1,5 +1,5 @@
 from typing import Annotated, Any
-
+from uuid import UUID
 from fastapi import APIRouter, Body, Depends, Query
 
 from app.core.exceptions import (
@@ -31,7 +31,7 @@ async def write_comment(
     if not check_request_available(payload=payload, request=request):
         raise request_forbidden
 
-    comment = Comment.model_validate(**comment_data.model_dump())
+    comment = Comment(**comment_data.model_dump(), author_id=int(payload['sub']))
 
     session.add(comment)
     await session.commit()
@@ -43,7 +43,7 @@ async def write_comment(
 @router.put("/{comment_id}")
 async def edit_comment(
     session: SessionDep,
-    comment_id: int,
+    comment_id: UUID,
     content: Annotated[str, Body(max_length=500)],
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
