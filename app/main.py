@@ -8,7 +8,7 @@ from app.endpoints.requests import router as requests_router
 from app.endpoints.services import router as service_router
 from app.endpoints.users import router as user_router
 
-app = FastAPI(lifespan=app_lifespan)
+app = FastAPI(lifespan=app_lifespan, root_path="/api")
 
 app.include_router(auth_router)
 app.include_router(user_router)

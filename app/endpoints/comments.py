@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 from uuid import UUID
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, Query, status
 
 from app.core.exceptions import (
     comment_forbidden,
@@ -17,7 +17,7 @@ from app.schemas.comments import CommentCreate, GetComments
 router = APIRouter(prefix="/comments", tags=["Comments"])
 
 
-@router.post("", response_model=Comment)
+@router.post("", response_model=Comment, status_code=status.HTTP_201_CREATED)
 async def write_comment(
     session: SessionDep,
     comment_data: CommentCreate,

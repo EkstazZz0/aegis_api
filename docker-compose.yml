@@ -2,7 +2,6 @@ services:
   api:
     container_name: api
     build: .
-    command: ["--host", "${APP_HOST}", "--port", "8000"]
     expose:
       - "8000"
     environment:
@@ -17,7 +16,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.api.middlewares=api-strip@docker"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.api-strip.stripprefix.prefixes=/api"
+    networks:
+      - aegis
     depends_on:
       - db
 
@@ -27,7 +30,7 @@ services:
     command:
       - "--api.dashboard=true"
       - "--providers.docker=true"
-      - "--entrypoint.web.address=:80"
+      - "--entrypoints.web.address=:80"
     volumes:
        - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
@@ -37,6 +40,7 @@ services:
       - aegis
     depends_on:
       - api
+      - db
   
   db:
     image: postgres:16

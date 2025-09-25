@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
@@ -83,7 +83,7 @@ async def edit_medical_organisation(
     return medical_organisation
 
 
-@router.post("")
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_medical_organisation(
     session: SessionDep,
     create_data: CreateMedicalOrganisation,

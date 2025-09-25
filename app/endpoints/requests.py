@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import select
 
 from app.core.enums import RequestStatus, UserRole
@@ -13,7 +13,7 @@ from app.schemas.requests import GetRequests, RequestCreate
 router = APIRouter(prefix="/requests", tags=["Requests"])
 
 
-@router.post("", response_model=Request)
+@router.post("", response_model=Request, status_code=status.HTTP_201_CREATED)
 async def create_request(
     session: SessionDep,
     request_data: RequestCreate,
