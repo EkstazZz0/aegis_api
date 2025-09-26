@@ -5,24 +5,22 @@ from sqlmodel import select
 
 from app.core.config import pwd_context
 from app.core.enums import UserRole
-from app.core.exceptions import (
-    forbidden,
-    invlaid_change_password,
-    medical_organisation_not_found,
-    user_not_found,
-)
-from app.core.utils import check_request_available, get_payload_from_access_token, get_user as get_user_from_payload
-from app.db.models import MedicalOrganisation, Request, User, UserSession, ResolverService, Service
-from app.db.repository import get_user as db_get_user, update_resolver_services as db_update_resolver_services, get_resolver_services_ids
+from app.core.exceptions import (forbidden, invlaid_change_password,
+                                 medical_organisation_not_found,
+                                 user_not_found)
+from app.core.utils import (check_request_available,
+                            get_payload_from_access_token)
+from app.core.utils import get_user as get_user_from_payload
+from app.db.models import (MedicalOrganisation, Request,
+                           Service, User, UserSession)
+from app.db.repository import get_resolver_services_ids
+from app.db.repository import get_user as db_get_user
+from app.db.repository import \
+    update_resolver_services as db_update_resolver_services
 from app.db.session import SessionDep
-from app.schemas.users import (
-    AdminChangePassword,
-    UserChangePasword,
-    UserPublic,
-    UserUpdateAdmin,
-    UserCreateResolverServices,
-    GetUsersFilterData,
-)
+from app.schemas.users import (AdminChangePassword, GetUsersFilterData,
+                               UserChangePasword, UserCreateResolverServices,
+                               UserPublic, UserUpdateAdmin)
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -65,9 +63,9 @@ async def get_user(
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
     request_id: int | None = Query(default=None),
 ):
-    if int(payload['sub']) == user_id:
+    if int(payload["sub"]) == user_id:
         return await db_get_user(session=session, user_id=user_id)
-    
+
     if payload["role"] == UserRole.customer:
         raise forbidden
     elif payload["role"] == UserRole.resolver:
@@ -89,35 +87,41 @@ async def get_user(
 async def get_users(
     session: SessionDep,
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
-    get_users_data: Annotated[GetUsersFilterData, Query()]
+    get_users_data: Annotated[GetUsersFilterData, Query()],
 ):
     if payload["role"] != UserRole.admin:
         raise forbidden
-    
+
     statement = select(User)
 
     if get_users_data.username:
         statement = statement.where(User.username == get_users_data.username)
-    
+
     if get_users_data.phone_number:
         statement = statement.where(User.phone_number == get_users_data.phone_number)
-    
+
     if get_users_data.full_name:
         substrings = get_users_data.full_name.split(" ")
 
         for substring in substrings:
             statement = statement.where(User.full_name.ilike(f"%{substring}%"))
-    
+
     if get_users_data.role:
-        statement = statement.where(User.role==get_users_data.role)
-    
+        statement = statement.where(User.role == get_users_data.role)
+
     if get_users_data.active:
         statement = statement.where(User.active == get_users_data.active)
-    
-    if get_users_data.medical_organisation_id:
-        statement = statement.where(User.medical_organisation_id == get_users_data.medical_organisation_id)
 
-    statement = statement.order_by(User.id).limit(get_users_data.limit).offset(get_users_data.offset)
+    if get_users_data.medical_organisation_id:
+        statement = statement.where(
+            User.medical_organisation_id == get_users_data.medical_organisation_id
+        )
+
+    statement = (
+        statement.order_by(User.id)
+        .limit(get_users_data.limit)
+        .offset(get_users_data.offset)
+    )
 
     return (await session.execute(statement)).scalars().all()
 
@@ -129,9 +133,9 @@ async def edit_user(
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
     update_data: UserUpdateAdmin,
 ):
-    if payload["role"] != UserRole.admin and int(payload['sub']) != user_id:
+    if payload["role"] != UserRole.admin and int(payload["sub"]) != user_id:
         raise forbidden
-    if int(payload['sub']) == user_id and update_data.role:
+    if int(payload["sub"]) == user_id and update_data.role:
         raise forbidden
 
     user = await session.get(User, user_id)
@@ -206,17 +210,20 @@ async def update_resolver_services(
     user_id: int,
     service_data: UserCreateResolverServices,
 ):
-    if payload['role'] != UserRole.admin:
+    if payload["role"] != UserRole.admin:
         raise forbidden
-    
+
     user = await db_get_user(session=session, user_id=user_id)
-    
+
     if user.role != UserRole.resolver:
         raise forbidden
-    
-    await db_update_resolver_services(session=session, resolver=user, services_ids=service_data.services_id)
+
+    await db_update_resolver_services(
+        session=session, resolver=user, services_ids=service_data.services_id
+    )
 
     return {"success": True}
+
 
 @router.get("/{user_id}/services", response_model=list[Service])
 async def get_resolver_services(
@@ -224,14 +231,24 @@ async def get_resolver_services(
     user_id: int,
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
-    if payload['role'] != UserRole.admin:
+    if payload["role"] != UserRole.admin:
         raise forbidden
-    
+
     user = await db_get_user(session=session, user_id=user_id)
 
     if user.role != UserRole.resolver:
         raise forbidden
-    
-    resolver_services = await get_resolver_services_ids(session=session, user_id=user.id)
-    
-    return (await session.execute(select(Service).where(Service.id.in_(resolver_services)))).scalars().all()
+
+    resolver_services = await get_resolver_services_ids(
+        session=session, user_id=user.id
+    )
+
+    return (
+        (
+            await session.execute(
+                select(Service).where(Service.id.in_(resolver_services))
+            )
+        )
+        .scalars()
+        .all()
+    )

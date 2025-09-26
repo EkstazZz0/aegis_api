@@ -5,11 +5,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 from app.core.enums import UserRole
-from app.core.exceptions import forbidden, service_not_found, service_exists
+from app.core.exceptions import forbidden, service_exists, service_not_found
 from app.core.utils import get_payload_from_access_token
 from app.db.models import Service
 from app.db.session import SessionDep
-from app.schemas.services import GetServiceFilterData, EditService, CreateService
+from app.schemas.services import (CreateService, EditService,
+                                  GetServiceFilterData)
 
 router = APIRouter(prefix="/services", tags=["Services"])
 
@@ -48,7 +49,7 @@ async def create_service(
 ):
     if payload["role"] != UserRole.admin:
         raise forbidden
-    
+
     service = Service.model_validate(service_data)
 
     session.add(service)
@@ -57,7 +58,7 @@ async def create_service(
         await session.commit()
     except IntegrityError:
         raise service_exists
-    
+
     await session.refresh(service)
 
     return service
@@ -67,16 +68,16 @@ async def create_service(
 async def delete_service(
     session: SessionDep,
     service_id: int,
-    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)]
+    payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
 ):
     if payload["role"] != UserRole.admin:
         raise forbidden
-    
+
     service = await session.get(Service, service_id)
 
     if not service:
         raise service_not_found
-    
+
     await session.delete(service)
     await session.commit()
 
@@ -88,16 +89,16 @@ async def edit_service(
     session: SessionDep,
     service_id: int,
     payload: Annotated[dict[str, Any], Depends(get_payload_from_access_token)],
-    service_data: EditService
+    service_data: EditService,
 ):
     if payload["role"] != UserRole.admin:
         raise forbidden
-    
+
     service = await session.get(Service, service_id)
 
     if not service:
         raise service_not_found
-    
+
     service.sqlmodel_update(service_data.model_dump(exclude_unset=True))
 
     session.add(service)

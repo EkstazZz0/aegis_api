@@ -5,19 +5,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 from app.core.enums import UserRole
-from app.core.exceptions import (
-    forbidden,
-    medical_organisation_exists,
-    medical_organisation_not_found,
-)
+from app.core.exceptions import (forbidden, medical_organisation_exists,
+                                 medical_organisation_not_found)
 from app.core.utils import get_payload_from_access_token
 from app.db.models import MedicalOrganisation
 from app.db.session import SessionDep
-from app.schemas.medical_organisations import (
-    CreateMedicalOrganisation,
-    EditMedicalOrganisation,
-    GetMedicalOrganisations,
-)
+from app.schemas.medical_organisations import (CreateMedicalOrganisation,
+                                               EditMedicalOrganisation,
+                                               GetMedicalOrganisations)
 
 router = APIRouter(prefix="/medical_organisations", tags=["Medical Organisations"])
 

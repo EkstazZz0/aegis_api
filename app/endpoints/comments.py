@@ -1,14 +1,12 @@
 from typing import Annotated, Any
 from uuid import UUID
+
 from fastapi import APIRouter, Body, Depends, Query, status
 
-from app.core.exceptions import (
-    comment_forbidden,
-    comment_not_found,
-    request_forbidden,
-    request_not_found,
-)
-from app.core.utils import check_comment_available, check_request_available, get_payload_from_access_token
+from app.core.exceptions import (comment_forbidden, comment_not_found,
+                                 request_forbidden, request_not_found)
+from app.core.utils import (check_comment_available, check_request_available,
+                            get_payload_from_access_token)
 from app.db.models import Comment, Request
 from app.db.repository import get_comments as db_get_comments
 from app.db.session import SessionDep
@@ -31,7 +29,7 @@ async def write_comment(
     if not check_request_available(payload=payload, request=request):
         raise request_forbidden
 
-    comment = Comment(**comment_data.model_dump(), author_id=int(payload['sub']))
+    comment = Comment(**comment_data.model_dump(), author_id=int(payload["sub"]))
 
     session.add(comment)
     await session.commit()

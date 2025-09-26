@@ -26,8 +26,7 @@ auth_token_inactive = HTTPException(
 )
 
 auth_wrong_token_provided = HTTPException(
-    status_code=status.HTTP_403_FORBIDDEN,
-    detail="Required token with acces token type"
+    status_code=status.HTTP_403_FORBIDDEN, detail="Required token with acces token type"
 )
 
 medical_organisation_not_found = HTTPException(
@@ -60,8 +59,7 @@ service_not_found = HTTPException(
 )
 
 service_exists = HTTPException(
-    status_code=status.HTTP_409_CONFLICT,
-    detail="Status already exists"
+    status_code=status.HTTP_409_CONFLICT, detail="Status already exists"
 )
 
 request_not_found = HTTPException(
