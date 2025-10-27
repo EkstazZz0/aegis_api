@@ -8,17 +8,17 @@ from alembic import context
 from sqlmodel import SQLModel
 
 from app.db.models import *
-from app.core.config import db_connect_configuration
+from app.core.config import db_connect_configuration, app_env
+from app.core.enums import AppEnv
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
 db_url = db_connect_configuration['url']
 
-if "aiosqlite" in db_url:
-    db_url = db_url.replace("aiosqlite", "sqlite")
-
-if "asyncpg" in db_url:
+if app_env != AppEnv.production:
+    raise KeyError("Invalid value for APP_ENV. Use alembic only in production!")
+else:
     db_url = db_url.replace("asyncpg", "pg8000")
 
 

@@ -11,7 +11,7 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from app.core.config import (access_token_expire_time, app_env, jwt_algorithm,
                              oauth2_scheme, refresh_token_expire_time,
                              secret_key)
-from app.core.enums import UserRole
+from app.core.enums import UserRole, AppEnv
 from app.core.exceptions import (auth_expired_token, auth_token_invalid,
                                  auth_wrong_token_provided)
 from app.db.models import Comment, Request, User
@@ -22,12 +22,12 @@ from app.schemas.auth import NewToken
 
 
 async def app_lifespan(app: FastAPI):
-    if app_env == "test":
+    if app_env == AppEnv.test:
         await init_db()
 
     await set_preset_data()
     yield
-    if app_env == "test":
+    if app_env == AppEnv.test:
         await engine.dispose()
         os.unlink("./test.db")
 
